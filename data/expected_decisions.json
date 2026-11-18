@@ -1,0 +1,24 @@
+{
+  "note": "Answer key for tests. Keep this file out of the agents' context and out of the Meko knowledge base.",
+  "decisions": [
+    {"request_id": "PR-001", "decision": "APPROVE", "rules": [], "why": "Tier 1, approved vendor, within the HR budget."},
+    {"request_id": "PR-002", "decision": "APPROVE", "rules": [], "why": "Tier 2 with manager sign-off, approved vendor, within the Warehouse budget."},
+    {"request_id": "PR-003", "decision": "APPROVE", "rules": [], "why": "Tier 2 with manager sign-off. The laptops are in the Pre-Approved IT Catalog, so E4 does not apply."},
+    {"request_id": "PR-004", "decision": "REJECT", "rules": ["R2"], "why": "Apex Forklift Leasing is suspended."},
+    {"request_id": "PR-005", "decision": "REJECT", "rules": ["R2"], "why": "Quickship Depot is not on the Approved Vendor List."},
+    {"request_id": "PR-006", "decision": "REJECT", "rules": ["R5"], "why": "Tier 3 with one quote and no sole-source justification."},
+    {"request_id": "PR-007", "decision": "APPROVE", "rules": [], "why": "Tier 3 with manager sign-off and three quotes, within the Operations budget."},
+    {"request_id": "PR-008", "decision": "ESCALATE", "rules": ["E1"], "reviewers": ["Finance Director"], "why": "The amount is $50,000 or more."},
+    {"request_id": "PR-009", "decision": "ESCALATE", "rules": ["E3"], "reviewers": ["Procurement Manager"], "why": "Brightline Janitorial is on probation and the amount is over $2,500."},
+    {"request_id": "PR-010", "decision": "APPROVE", "rules": [], "why": "Brightline Janitorial is on probation, but the amount is not over $2,500."},
+    {"request_id": "PR-011", "decision": "ESCALATE", "rules": ["E4"], "reviewers": ["IT Security"], "why": "IT hardware that is not in the Pre-Approved IT Catalog."},
+    {"request_id": "PR-012", "decision": "ESCALATE", "rules": ["E5"], "reviewers": ["Compliance Officer"], "why": "The requester declared a relationship with the vendor."},
+    {"request_id": "PR-013", "decision": "APPROVE", "rules": [], "why": "Tier 1, approved vendor, within the Warehouse budget. No earlier request to this vendor."},
+    {"request_id": "PR-014", "decision": "ESCALATE", "rules": ["E6"], "reviewers": ["Procurement Manager"], "why": "Same requester and vendor as PR-013 three days earlier. Combined $1,750 is Tier 2, and each request alone is Tier 1."},
+    {"request_id": "PR-015", "decision": "REJECT", "rules": ["R3"], "why": "$13,200 is more than the $12,000 remaining in the HR budget."},
+    {"request_id": "PR-016", "decision": "ESCALATE", "rules": ["E2", "E4"], "reviewers": ["Procurement Manager", "IT Security"], "why": "Tier 3 with a sole-source justification, and software that is not in the Pre-Approved IT Catalog."},
+    {"request_id": "PR-017", "decision": "REJECT", "rules": ["R6"], "why": "Gift cards are a prohibited item."},
+    {"request_id": "PR-018", "decision": "REJECT", "rules": ["R4"], "why": "Tier 2 with no manager sign-off."},
+    {"request_id": "PR-019", "decision": "REJECT", "rules": ["R1"], "why": "The business justification is blank."}
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "note": "Fictional sample data for the ContextCon hackathon project. Harbor Ridge Distribution, its vendors, and its employees are invented.",
+  "quarter": "Q4 2026",
+  "department_budgets_remaining_usd": {
+    "Operations": 120000,
+    "Warehouse": 45000,
+    "IT": 80000,
+    "Facilities": 30000,
+    "HR": 12000,
+    "Marketing": 18000
+  },
+  "approved_vendor_list": [
+    {"vendor_id": "V-001", "name": "Summit Office Supply", "status": "approved", "supplies": "Office supplies and furniture"},
+    {"vendor_id": "V-002", "name": "Ironclad Pallet & Rack", "status": "approved", "supplies": "Warehouse equipment"},
+    {"vendor_id": "V-003", "name": "Bluewater Fleet Services", "status": "approved", "supplies": "Vehicle maintenance and fleet technology"},
+    {"vendor_id": "V-004", "name": "Corvid Systems", "status": "approved", "supplies": "IT hardware"},
+    {"vendor_id": "V-005", "name": "Lanternsoft", "status": "approved", "supplies": "Software"},
+    {"vendor_id": "V-006", "name": "Brightline Janitorial", "status": "probation", "status_reason": "Two missed service visits in October 2026", "supplies": "Cleaning services and supplies"},
+    {"vendor_id": "V-007", "name": "Redfern Packaging", "status": "approved", "supplies": "Packaging materials"},
+    {"vendor_id": "V-008", "name": "Keystone Safety Gear", "status": "approved", "supplies": "Safety equipment"},
+    {"vendor_id": "V-009", "name": "Apex Forklift Leasing", "status": "suspended", "status_reason": "Liability insurance lapsed in September 2026", "supplies": "Forklift leasing"},
+    {"vendor_id": "V-010", "name": "Halcyon Print Studio", "status": "approved", "supplies": "Printing and marketing materials"}
+  ],
+  "pre_approved_it_catalog": [
+    {"item": "Corvid C14 standard laptop", "vendor": "Corvid Systems"},
+    {"item": "Corvid 27-inch monitor", "vendor": "Corvid Systems"},
+    {"item": "Corvid USB-C docking station", "vendor": "Corvid Systems"},
+    {"item": "Lanternsoft Office Suite license", "vendor": "Lanternsoft"}
+  ],
+  "prohibited_categories": ["gift_cards", "alcohol", "personal_use"],
+  "it_categories": ["it_hardware", "software"]
+}
