@@ -1,0 +1,186 @@
+{
+  "request_id": "PR-008",
+  "conversation_id": "769592293ea24689a00b16cb58d3b116",
+  "decision": {
+    "decision": "ESCALATE",
+    "rules": [
+      "E1"
+    ],
+    "reviewers": [
+      "Finance Director"
+    ],
+    "tier": "T4",
+    "facts_used": [
+      "E1: $64,000.00 is $50,000 or more."
+    ],
+    "explanation": "PR-008 passes every reject check, so it is not rejected. It is a $64,000 request, which is high value, so it must go to the Finance Director for review before it can proceed. No other escalation rule applies.",
+    "rule_checks": [
+      {
+        "rule": "R1",
+        "applies": false,
+        "evidence": "Every required field is filled in.",
+        "decided_by": "code check"
+      },
+      {
+        "rule": "R2",
+        "applies": false,
+        "evidence": "The vendor is on the Approved Vendor List with status 'approved'.",
+        "decided_by": "code check"
+      },
+      {
+        "rule": "R3",
+        "applies": false,
+        "evidence": "$64,000.00 is within the department's remaining budget of $120,000.00.",
+        "decided_by": "code check"
+      },
+      {
+        "rule": "R4",
+        "applies": false,
+        "evidence": "$64,000.00 is $1,000 or more and a manager sign-off is recorded.",
+        "decided_by": "code check"
+      },
+      {
+        "rule": "R5",
+        "applies": false,
+        "evidence": "$64,000.00 is $10,000 or more with 3 quote(s) attached and no sole-source justification.",
+        "decided_by": "code check"
+      },
+      {
+        "rule": "R6",
+        "applies": false,
+        "evidence": "Telematics retrofit for delivery vehicles is not gift cards, alcohol, or personal-use items.",
+        "decided_by": "model"
+      },
+      {
+        "rule": "E1",
+        "applies": true,
+        "evidence": "$64,000.00 is $50,000 or more.",
+        "decided_by": "code check"
+      },
+      {
+        "rule": "E2",
+        "applies": false,
+        "evidence": "$64,000.00 is $10,000 or more and no sole-source justification is attached.",
+        "decided_by": "code check"
+      },
+      {
+        "rule": "E3",
+        "applies": false,
+        "evidence": "The vendor's status is 'approved' and $64,000.00 is more than $2,500.",
+        "decided_by": "code check"
+      },
+      {
+        "rule": "E4",
+        "applies": false,
+        "evidence": "The category is not IT hardware or software.",
+        "decided_by": "code check"
+      },
+      {
+        "rule": "E5",
+        "applies": false,
+        "evidence": "Conflict of interest is declared as false; no personal or financial relationship with the vendor is reported.",
+        "decided_by": "model"
+      },
+      {
+        "rule": "E6",
+        "applies": false,
+        "evidence": "Meko memory holds no earlier request by this requester to this vendor in the previous 7 days.",
+        "decided_by": "code check"
+      }
+    ],
+    "rules_not_checked": [],
+    "model_overruled_by_code_checks": [],
+    "computed_facts": {
+      "missing_required_fields": [],
+      "manager_signoff_recorded": true,
+      "quotes_attached": 3,
+      "fewer_than_three_quotes": false,
+      "sole_source_justification_attached": false,
+      "conflict_of_interest_declared": false,
+      "amount_usd": 64000.0,
+      "tier": "T4",
+      "amount_is_1000_or_more": true,
+      "amount_is_10000_or_more": true,
+      "amount_is_50000_or_more": true,
+      "amount_is_more_than_2500": true,
+      "department_budget_remaining_usd": 120000.0,
+      "amount_is_greater_than_remaining_budget": false,
+      "department_budget_source_chunk": "bd5bc4cd-eb10-5428-a840-0322a5274949",
+      "vendor_status": "approved",
+      "vendor_status_source_chunk": "bd5bc4cd-eb10-5428-a840-0322a5274949",
+      "category_is_it_hardware_or_software": false,
+      "earlier_requests_same_requester_and_vendor_within_7_days": []
+    }
+  },
+  "retrieval": [
+    {
+      "query": "required information a purchase request must include",
+      "chunk_ids": [
+        "51a731bf-2a08-530c-8ef5-138fb7ff27fb",
+        "d4bee058-0763-5031-8fd5-01ca463805c2"
+      ]
+    },
+    {
+      "query": "approval tiers by amount: manager sign-off and competitive quotes",
+      "chunk_ids": [
+        "2efbaf3b-63fb-5ae8-bb4a-eae3a8e4d6cc",
+        "d4bee058-0763-5031-8fd5-01ca463805c2"
+      ]
+    },
+    {
+      "query": "reject rules R1 to R6",
+      "chunk_ids": [
+        "ffaafc15-6a48-5b6e-aad7-9eb0a94bc3e0",
+        "d4bee058-0763-5031-8fd5-01ca463805c2"
+      ]
+    },
+    {
+      "query": "escalate rules E1 to E6 and their reviewers",
+      "chunk_ids": [
+        "ffaafc15-6a48-5b6e-aad7-9eb0a94bc3e0",
+        "15d06d58-cb37-524c-8f96-9c5b56890a33",
+        "2cea88c5-a254-5014-b233-ab4cef990cae"
+      ]
+    },
+    {
+      "query": "order of evaluation: reject rules take priority over escalate rules",
+      "chunk_ids": [
+        "ffaafc15-6a48-5b6e-aad7-9eb0a94bc3e0",
+        "15d06d58-cb37-524c-8f96-9c5b56890a33",
+        "2245e0f0-a9f2-5931-92f0-fd05aa410beb"
+      ]
+    },
+    {
+      "query": "department budgets remaining for Operations",
+      "chunk_ids": [
+        "bd5bc4cd-eb10-5428-a840-0322a5274949",
+        "297e928a-d6bb-5109-9b3d-6dd4554244bf"
+      ]
+    },
+    {
+      "query": "Bluewater Fleet Services vendor status on the Approved Vendor List",
+      "chunk_ids": [
+        "bd5bc4cd-eb10-5428-a840-0322a5274949",
+        "a67b5814-a556-5fe7-bb11-f2befc26196e",
+        "d4bee058-0763-5031-8fd5-01ca463805c2",
+        "66d993f3-2949-5503-83ba-4d457d402f40"
+      ]
+    },
+    {
+      "query": "vendors with status probation or suspended",
+      "chunk_ids": [
+        "a67b5814-a556-5fe7-bb11-f2befc26196e",
+        "d4bee058-0763-5031-8fd5-01ca463805c2",
+        "15d06d58-cb37-524c-8f96-9c5b56890a33",
+        "66d993f3-2949-5503-83ba-4d457d402f40"
+      ]
+    }
+  ],
+  "memories": [],
+  "memories_searched": 68,
+  "tokens": {
+    "input": 5075,
+    "output": 750
+  },
+  "model": "claude-haiku-5-5"
+}

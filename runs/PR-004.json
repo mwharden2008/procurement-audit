@@ -1,6 +1,6 @@
 {
   "request_id": "PR-004",
-  "conversation_id": "5bb6a59171314bac9ba5159f977e9936",
+  "conversation_id": "8d100105e2b54cdba4bcce52c2ce25f2",
   "decision": {
     "decision": "REJECT",
     "rules": [
@@ -9,72 +9,106 @@
     "reviewers": [],
     "tier": "T2",
     "facts_used": [
-      "R2: Apex Forklift Leasing (V-009) is on the Approved Vendor List with status 'suspended' because its liability insurance lapsed in September 2026. Suspended vendors are not eligible."
+      "R2: The vendor's status on the Approved Vendor List is 'suspended'."
     ],
-    "explanation": "The request is rejected because Apex Forklift Leasing is suspended from the approved vendor list after its liability insurance lapsed in September 2026, so it cannot currently be paid for purchases. The requester may choose a different eligible vendor or wait for the vendor's status to be restored and then resubmit. No other rules apply.",
+    "explanation": "Request PR-004 must be rejected because Apex Forklift Leasing is currently suspended from the Approved Vendor List, after its liability insurance lapsed in September 2026. Suspended vendors are not eligible, so the purchase cannot proceed as submitted. The requester may resubmit with an eligible vendor.",
     "rule_checks": [
       {
         "rule": "R1",
         "applies": false,
-        "evidence": "All required fields are present: requester (Marcus Bell), department (Warehouse), vendor (Apex Forklift Leasing), item description, category (warehouse_equipment), amount ($9,000), request date (2026-11-04), and justification (extra forklift for holiday peak)."
+        "evidence": "Every required field is filled in.",
+        "decided_by": "code check"
       },
       {
         "rule": "R2",
         "applies": true,
-        "evidence": "Apex Forklift Leasing (V-009) is on the Approved Vendor List with status 'suspended' because its liability insurance lapsed in September 2026. Suspended vendors are not eligible."
+        "evidence": "The vendor's status on the Approved Vendor List is 'suspended'.",
+        "decided_by": "code check"
       },
       {
         "rule": "R3",
         "applies": false,
-        "evidence": "Request amount is $9,000 and the Warehouse department has $45,000 remaining for Q4 2026, so the request is within budget."
+        "evidence": "$9,000.00 is within the department's remaining budget of $45,000.00.",
+        "decided_by": "code check"
       },
       {
         "rule": "R4",
         "applies": false,
-        "evidence": "Amount is $9,000 (at least $1,000) and manager sign-off is recorded as Elena Voss, so the sign-off requirement is met."
+        "evidence": "$9,000.00 is $1,000 or more and a manager sign-off is recorded.",
+        "decided_by": "code check"
       },
       {
         "rule": "R5",
         "applies": false,
-        "evidence": "Amount is $9,000, which is under the $10,000 threshold, so the three-quote rule does not apply (only 1 quote attached, but not triggered)."
+        "evidence": "$9,000.00 is under $10,000, so three quotes are not required.",
+        "decided_by": "code check"
       },
       {
         "rule": "R6",
         "applies": false,
-        "evidence": "Request is for a three-month forklift lease for warehouse operations, not gift cards, alcohol, or personal-use items."
+        "evidence": "The item is a three-month forklift lease for warehouse use, not gift cards, alcohol or personal items.",
+        "decided_by": "model"
       },
       {
         "rule": "E1",
         "applies": false,
-        "evidence": "Amount is $9,000, below the $50,000 high-value threshold."
+        "evidence": "$9,000.00 is under $50,000.",
+        "decided_by": "code check"
       },
       {
         "rule": "E2",
         "applies": false,
-        "evidence": "Amount is under $10,000 and no sole-source justification is attached (sole_source_justification is false)."
+        "evidence": "$9,000.00 is under $10,000, so the sole-source rule does not apply.",
+        "decided_by": "code check"
       },
       {
         "rule": "E3",
         "applies": false,
-        "evidence": "Vendor status is 'suspended', not 'probation'. The probation escalation does not apply."
+        "evidence": "The vendor's status is 'suspended' and $9,000.00 is more than $2,500.",
+        "decided_by": "code check"
       },
       {
         "rule": "E4",
         "applies": false,
-        "evidence": "Category is warehouse_equipment, not IT hardware or software."
+        "evidence": "The category is not IT hardware or software.",
+        "decided_by": "code check"
       },
       {
         "rule": "E5",
         "applies": false,
-        "evidence": "Conflict of interest declared is false; no declared relationship with the vendor."
+        "evidence": "The requester declared no conflict of interest.",
+        "decided_by": "model"
       },
       {
         "rule": "E6",
         "applies": false,
-        "evidence": "Memory M1 and M2 show only this same request PR-004 from Marcus Bell to Apex; no other request from the same requester to the same vendor within 7 days is on record."
+        "evidence": "Meko memory holds no earlier request by this requester to this vendor in the previous 7 days.",
+        "decided_by": "code check"
       }
     ],
-    "rules_not_checked": []
+    "rules_not_checked": [],
+    "model_overruled_by_code_checks": [],
+    "computed_facts": {
+      "missing_required_fields": [],
+      "manager_signoff_recorded": true,
+      "quotes_attached": 1,
+      "fewer_than_three_quotes": true,
+      "sole_source_justification_attached": false,
+      "conflict_of_interest_declared": false,
+      "amount_usd": 9000.0,
+      "tier": "T2",
+      "amount_is_1000_or_more": true,
+      "amount_is_10000_or_more": false,
+      "amount_is_50000_or_more": false,
+      "amount_is_more_than_2500": true,
+      "department_budget_remaining_usd": 45000.0,
+      "amount_is_greater_than_remaining_budget": false,
+      "department_budget_source_chunk": "bd5bc4cd-eb10-5428-a840-0322a5274949",
+      "vendor_status": "suspended",
+      "vendor_status_source_chunk": "66d993f3-2949-5503-83ba-4d457d402f40",
+      "category_is_it_hardware_or_software": false,
+      "earlier_requests_same_requester_and_vendor_within_7_days": []
+    }
   },
   "retrieval": [
     {
@@ -138,13 +172,11 @@
       ]
     }
   ],
-  "memories": [
-    "On November 4, 2026, Marcus Bell (Warehouse) submitted procurement request PR-004 to lease one electric forklift for three months from Apex Forklift Leasing for $9,000 (category: warehouse_equipment; non-catalog). Justification: extra forklift needed for the holiday peak. Manager sign-off: Elena Voss. Attachments: 1 quote. Sole-source justification: no. Conflict of interest declared: no.",
-    "Purchase request PR-004 dated 2026-11-04: Marcus Bell (Warehouse) requested $9,000.00 from Apex Forklift Leasing for Three-month lease of one electric forklift. Decision: REJECT (R2, R5)."
-  ],
+  "memories": [],
+  "memories_searched": 67,
   "tokens": {
-    "input": 4169,
-    "output": 962
+    "input": 4967,
+    "output": 809
   },
   "model": "claude-haiku-5-5"
 }

@@ -1,0 +1,199 @@
+{
+  "request_id": "PR-014",
+  "conversation_id": "e3b8011723b141589d33a085c9948416",
+  "decision": {
+    "decision": "ESCALATE",
+    "rules": [
+      "E6"
+    ],
+    "reviewers": [
+      "Procurement Manager"
+    ],
+    "tier": "T1",
+    "facts_used": [
+      "E6: With PR-013, the combined amount is $1,750.00 (tier T2). The highest tier of any single request is T1, so the combined tier is higher."
+    ],
+    "explanation": "Request PR-014 for $850.00 passes every reject check: the vendor is approved, the Warehouse budget covers it, and the request is complete. However, Daniel Okafor sent another $900.00 request to the same vendor three days earlier (PR-013), and together they total $1,750.00, which falls into a higher approval tier than either request alone. This possible split purchase must be reviewed by the Procurement Manager before it can proceed.",
+    "rule_checks": [
+      {
+        "rule": "R1",
+        "applies": false,
+        "evidence": "Every required field is filled in.",
+        "decided_by": "code check"
+      },
+      {
+        "rule": "R2",
+        "applies": false,
+        "evidence": "The vendor is on the Approved Vendor List with status 'approved'.",
+        "decided_by": "code check"
+      },
+      {
+        "rule": "R3",
+        "applies": false,
+        "evidence": "$850.00 is within the department's remaining budget of $45,000.00.",
+        "decided_by": "code check"
+      },
+      {
+        "rule": "R4",
+        "applies": false,
+        "evidence": "$850.00 is under $1,000, so no manager sign-off is needed.",
+        "decided_by": "code check"
+      },
+      {
+        "rule": "R5",
+        "applies": false,
+        "evidence": "$850.00 is under $10,000, so three quotes are not required.",
+        "decided_by": "code check"
+      },
+      {
+        "rule": "R6",
+        "applies": false,
+        "evidence": "Cut-resistant gloves for seasonal warehouse staff are not gift cards, alcohol, or personal-use items.",
+        "decided_by": "model"
+      },
+      {
+        "rule": "E1",
+        "applies": false,
+        "evidence": "$850.00 is under $50,000.",
+        "decided_by": "code check"
+      },
+      {
+        "rule": "E2",
+        "applies": false,
+        "evidence": "$850.00 is under $10,000, so the sole-source rule does not apply.",
+        "decided_by": "code check"
+      },
+      {
+        "rule": "E3",
+        "applies": false,
+        "evidence": "The vendor's status is 'approved' and $850.00 is not more than $2,500.",
+        "decided_by": "code check"
+      },
+      {
+        "rule": "E4",
+        "applies": false,
+        "evidence": "The category is not IT hardware or software.",
+        "decided_by": "code check"
+      },
+      {
+        "rule": "E5",
+        "applies": false,
+        "evidence": "Conflict of interest declared is false.",
+        "decided_by": "model"
+      },
+      {
+        "rule": "E6",
+        "applies": true,
+        "evidence": "With PR-013, the combined amount is $1,750.00 (tier T2). The highest tier of any single request is T1, so the combined tier is higher.",
+        "decided_by": "code check"
+      }
+    ],
+    "rules_not_checked": [],
+    "model_overruled_by_code_checks": [],
+    "computed_facts": {
+      "missing_required_fields": [],
+      "manager_signoff_recorded": false,
+      "quotes_attached": 0,
+      "fewer_than_three_quotes": true,
+      "sole_source_justification_attached": false,
+      "conflict_of_interest_declared": false,
+      "amount_usd": 850.0,
+      "tier": "T1",
+      "amount_is_1000_or_more": false,
+      "amount_is_10000_or_more": false,
+      "amount_is_50000_or_more": false,
+      "amount_is_more_than_2500": false,
+      "department_budget_remaining_usd": 45000.0,
+      "amount_is_greater_than_remaining_budget": false,
+      "department_budget_source_chunk": "bd5bc4cd-eb10-5428-a840-0322a5274949",
+      "vendor_status": "approved",
+      "vendor_status_source_chunk": "66d993f3-2949-5503-83ba-4d457d402f40",
+      "category_is_it_hardware_or_software": false,
+      "earlier_requests_same_requester_and_vendor_within_7_days": [
+        {
+          "request_id": "PR-013",
+          "request_date": "2026-11-09",
+          "amount_usd": 900.0,
+          "days_before": 3,
+          "memory_id": "7bb04f7b-5dbb-47a3-b0cd-cae97883817b"
+        }
+      ],
+      "combined_amount_usd": 1750.0,
+      "combined_tier": "T2",
+      "highest_tier_of_any_single_request": "T1",
+      "combined_tier_is_higher_than_each_request_alone": true
+    }
+  },
+  "retrieval": [
+    {
+      "query": "required information a purchase request must include",
+      "chunk_ids": [
+        "51a731bf-2a08-530c-8ef5-138fb7ff27fb",
+        "d4bee058-0763-5031-8fd5-01ca463805c2"
+      ]
+    },
+    {
+      "query": "approval tiers by amount: manager sign-off and competitive quotes",
+      "chunk_ids": [
+        "2efbaf3b-63fb-5ae8-bb4a-eae3a8e4d6cc",
+        "d4bee058-0763-5031-8fd5-01ca463805c2"
+      ]
+    },
+    {
+      "query": "reject rules R1 to R6",
+      "chunk_ids": [
+        "ffaafc15-6a48-5b6e-aad7-9eb0a94bc3e0",
+        "d4bee058-0763-5031-8fd5-01ca463805c2"
+      ]
+    },
+    {
+      "query": "escalate rules E1 to E6 and their reviewers",
+      "chunk_ids": [
+        "ffaafc15-6a48-5b6e-aad7-9eb0a94bc3e0",
+        "15d06d58-cb37-524c-8f96-9c5b56890a33",
+        "2cea88c5-a254-5014-b233-ab4cef990cae"
+      ]
+    },
+    {
+      "query": "order of evaluation: reject rules take priority over escalate rules",
+      "chunk_ids": [
+        "ffaafc15-6a48-5b6e-aad7-9eb0a94bc3e0",
+        "15d06d58-cb37-524c-8f96-9c5b56890a33",
+        "2245e0f0-a9f2-5931-92f0-fd05aa410beb"
+      ]
+    },
+    {
+      "query": "department budgets remaining for Warehouse",
+      "chunk_ids": [
+        "bd5bc4cd-eb10-5428-a840-0322a5274949"
+      ]
+    },
+    {
+      "query": "Keystone Safety Gear vendor status on the Approved Vendor List",
+      "chunk_ids": [
+        "66d993f3-2949-5503-83ba-4d457d402f40",
+        "a67b5814-a556-5fe7-bb11-f2befc26196e",
+        "d4bee058-0763-5031-8fd5-01ca463805c2",
+        "bd5bc4cd-eb10-5428-a840-0322a5274949"
+      ]
+    },
+    {
+      "query": "vendors with status probation or suspended",
+      "chunk_ids": [
+        "a67b5814-a556-5fe7-bb11-f2befc26196e",
+        "d4bee058-0763-5031-8fd5-01ca463805c2",
+        "15d06d58-cb37-524c-8f96-9c5b56890a33",
+        "66d993f3-2949-5503-83ba-4d457d402f40"
+      ]
+    }
+  ],
+  "memories": [
+    "Purchase request PR-013 dated 2026-11-09: Daniel Okafor (Warehouse) requested $900.00 from Keystone Safety Gear for Sixty high-visibility vests. Decision: APPROVE (no rules cited)."
+  ],
+  "memories_searched": 71,
+  "tokens": {
+    "input": 5218,
+    "output": 829
+  },
+  "model": "claude-haiku-5-5"
+}

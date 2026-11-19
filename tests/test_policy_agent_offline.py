@@ -11,6 +11,7 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 
+from agents.facts import code_checks, compute_facts
 from agents.policy_agent import RULE_IDS, decide, knowledge_queries, resolve
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -26,11 +27,19 @@ class FakeMeko:
 
     async def search_knowledge(self, conversation_id, query, limit=4):
         self.calls.append("search_knowledge")
-        return [{"id": f"chunk-{len(query) % 3}", "chunk_text": f"text for {query}"}]
+        reference = (ROOT / "data/reference_data.json").read_text(encoding="utf-8")
+        return [{"id": "ref-1", "chunk_text": reference},
+                {"id": f"chunk-{len(query) % 3}", "chunk_text": f"text for {query}"}]
 
-    async def search_memory(self, conversation_id, query, limit=10):
+    async def search_memory(self, conversation_id, query, limit=100):
         self.calls.append("search_memory")
-        return [{"memory": "PR-013: Daniel Okafor requested $900.00 from Keystone Safety Gear."}]
+        return [{
+            "id": "mem-13", "created_at": "2026-11-19T19:13:50",
+            "memory": "PR-013: Daniel Okafor requested $900.00 from Keystone Safety Gear.",
+            "metadata": {"request_id": "PR-013", "requester": "Daniel Okafor",
+                         "vendor": "Keystone Safety Gear", "amount_usd": 900.0,
+                         "request_date": "2026-11-09"},
+        }]
 
     async def add_message(self, conversation_id, input_text, output_text, **kwargs):
         self.calls.append("add_message")
@@ -107,6 +116,10 @@ def test_model_sees_request_knowledge_and_memories():
     assert "PR-014" in prompt
     assert "[K1]" in prompt
     assert "[M1] PR-013" in prompt
+    assert "COMPUTED FACTS" in prompt
+    facts = record["decision"]["computed_facts"]
+    assert facts["combined_amount_usd"] == 1750.0
+    assert facts["combined_tier_is_higher_than_each_request_alone"] is True
     assert model.request["tool_choice"] == {"type": "tool", "name": "record_decision"}
     assert record["decision"]["reviewers"] == ["Procurement Manager"]
 
@@ -142,3 +155,71 @@ def test_a_rule_the_model_skipped_is_reported():
 def test_it_requests_also_look_up_the_catalog():
     assert "Pre-Approved IT Catalog items" in knowledge_queries(load_request("PR-011"))
     assert "Pre-Approved IT Catalog items" not in knowledge_queries(load_request("PR-001"))
+
+
+def reference_chunks():
+    text = (ROOT / "data/reference_data.json").read_text(encoding="utf-8")
+    return [{"id": "ref-1", "chunk_text": text}]
+
+
+def decision_memory(request):
+    return {
+        "id": f"mem-{request['request_id']}", "created_at": "2026-11-19",
+        "metadata": {k: request[k] for k in ("request_id", "requester", "vendor",
+                                             "amount_usd", "request_date")},
+    }
+
+
+def test_computed_facts_agree_with_the_reference_solver_on_every_request():
+    """The numeric rules, judged from computed facts alone, match the solver."""
+    import reference_solver as solver
+
+    reference = json.loads((ROOT / "data/reference_data.json").read_text(encoding="utf-8"))
+    requests = sorted(
+        json.loads((ROOT / "data/purchase_requests.json").read_text(encoding="utf-8")),
+        key=lambda r: (r["request_date"], r["request_id"]))
+    for position, request in enumerate(requests):
+        earlier = requests[:position]
+        facts = compute_facts(request, reference_chunks(), [decision_memory(r) for r in earlier])
+        verdicts = code_checks(facts)
+        got = {rule for rule, verdict in verdicts.items() if verdict["applies"]}
+        decision, rules = solver.decide(request, reference, earlier)
+        expected = set(rules) & set(verdicts)
+        # The solver stops at reject rules, so compare each group separately.
+        if decision == "REJECT":
+            assert {r for r in got if r.startswith("R")} == expected, request["request_id"]
+        else:
+            assert got == expected, request["request_id"]
+
+
+def test_code_check_overrules_the_model_and_records_it():
+    request = load_request("PR-007")
+    earlier = [decision_memory(load_request("PR-006"))]
+    verdicts = code_checks(compute_facts(request, reference_chunks(), earlier))
+    decision = resolve(findings({"E6"}, tier="T3"), verdicts)
+    assert (decision["decision"], decision["rules"]) == ("APPROVE", [])
+    overruled = decision["model_overruled_by_code_checks"]
+    assert [o["rule"] for o in overruled] == ["E6"]
+    assert overruled[0]["model_said"] is True
+    assert decision["explanation"].startswith("This request is approved.")
+
+
+def test_model_keeps_its_judgement_on_rules_the_code_cannot_settle():
+    request = load_request("PR-017")
+    verdicts = code_checks(compute_facts(request, reference_chunks(), []))
+    assert "R6" not in verdicts and "E5" not in verdicts
+    decision = resolve(findings({"R6"}, tier="T1"), verdicts)
+    assert (decision["decision"], decision["rules"]) == ("REJECT", ["R6"])
+    assert decision["model_overruled_by_code_checks"] == []
+
+
+def test_later_and_unrelated_memories_are_ignored():
+    request = load_request("PR-013")
+    memories = [decision_memory(load_request(i)) for i in ("PR-014", "PR-002", "PR-013")]
+    facts = compute_facts(request, reference_chunks(), memories)
+    assert facts["earlier_requests_same_requester_and_vendor_within_7_days"] == []
+
+
+def test_unknown_vendor_is_reported_as_not_found():
+    facts = compute_facts(load_request("PR-005"), reference_chunks(), [])
+    assert facts["vendor_status"].startswith("vendor not found among the 10 vendors")

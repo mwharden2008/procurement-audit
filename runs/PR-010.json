@@ -1,0 +1,193 @@
+{
+  "request_id": "PR-010",
+  "conversation_id": "c0377e8226fb408982cc99229df8ec5a",
+  "decision": {
+    "decision": "APPROVE",
+    "rules": [],
+    "reviewers": [],
+    "tier": "T1",
+    "facts_used": [],
+    "explanation": "Request PR-010 for $640.00 from Brightline Janitorial passes every reject and escalate check, so it may be approved. Brightline is on probation, but that only triggers escalation above $2,500, and this request is well below that. The same requester sent a related $3,900.00 request to this vendor today, and the combined total is still in the same approval tier as each request alone, so no split-purchase escalation applies.",
+    "rule_checks": [
+      {
+        "rule": "R1",
+        "applies": false,
+        "evidence": "Every required field is filled in.",
+        "decided_by": "code check"
+      },
+      {
+        "rule": "R2",
+        "applies": false,
+        "evidence": "The vendor is on the Approved Vendor List with status 'probation'.",
+        "decided_by": "code check"
+      },
+      {
+        "rule": "R3",
+        "applies": false,
+        "evidence": "$640.00 is within the department's remaining budget of $30,000.00.",
+        "decided_by": "code check"
+      },
+      {
+        "rule": "R4",
+        "applies": false,
+        "evidence": "$640.00 is under $1,000, so no manager sign-off is needed.",
+        "decided_by": "code check"
+      },
+      {
+        "rule": "R5",
+        "applies": false,
+        "evidence": "$640.00 is under $10,000, so three quotes are not required.",
+        "decided_by": "code check"
+      },
+      {
+        "rule": "R6",
+        "applies": false,
+        "evidence": "Restroom paper goods and soap refills for facilities restocking are not gift cards, alcohol, or personal-use items.",
+        "decided_by": "model"
+      },
+      {
+        "rule": "E1",
+        "applies": false,
+        "evidence": "$640.00 is under $50,000.",
+        "decided_by": "code check"
+      },
+      {
+        "rule": "E2",
+        "applies": false,
+        "evidence": "$640.00 is under $10,000, so the sole-source rule does not apply.",
+        "decided_by": "code check"
+      },
+      {
+        "rule": "E3",
+        "applies": false,
+        "evidence": "The vendor's status is 'probation' and $640.00 is not more than $2,500.",
+        "decided_by": "code check"
+      },
+      {
+        "rule": "E4",
+        "applies": false,
+        "evidence": "The category is not IT hardware or software.",
+        "decided_by": "code check"
+      },
+      {
+        "rule": "E5",
+        "applies": false,
+        "evidence": "No conflict of interest declared; the flag is false.",
+        "decided_by": "model"
+      },
+      {
+        "rule": "E6",
+        "applies": false,
+        "evidence": "With PR-009, the combined amount is $4,540.00 (tier T2). The highest tier of any single request is T2, so the combined tier is not higher.",
+        "decided_by": "code check"
+      }
+    ],
+    "rules_not_checked": [],
+    "model_overruled_by_code_checks": [],
+    "computed_facts": {
+      "missing_required_fields": [],
+      "manager_signoff_recorded": false,
+      "quotes_attached": 0,
+      "fewer_than_three_quotes": true,
+      "sole_source_justification_attached": false,
+      "conflict_of_interest_declared": false,
+      "amount_usd": 640.0,
+      "tier": "T1",
+      "amount_is_1000_or_more": false,
+      "amount_is_10000_or_more": false,
+      "amount_is_50000_or_more": false,
+      "amount_is_more_than_2500": false,
+      "department_budget_remaining_usd": 30000.0,
+      "amount_is_greater_than_remaining_budget": false,
+      "department_budget_source_chunk": "bd5bc4cd-eb10-5428-a840-0322a5274949",
+      "vendor_status": "probation",
+      "vendor_status_source_chunk": "66d993f3-2949-5503-83ba-4d457d402f40",
+      "category_is_it_hardware_or_software": false,
+      "earlier_requests_same_requester_and_vendor_within_7_days": [
+        {
+          "request_id": "PR-009",
+          "request_date": "2026-11-09",
+          "amount_usd": 3900.0,
+          "days_before": 0,
+          "memory_id": "e78f0660-5401-4e09-93cb-443e804f12df"
+        }
+      ],
+      "combined_amount_usd": 4540.0,
+      "combined_tier": "T2",
+      "highest_tier_of_any_single_request": "T2",
+      "combined_tier_is_higher_than_each_request_alone": false
+    }
+  },
+  "retrieval": [
+    {
+      "query": "required information a purchase request must include",
+      "chunk_ids": [
+        "51a731bf-2a08-530c-8ef5-138fb7ff27fb",
+        "d4bee058-0763-5031-8fd5-01ca463805c2"
+      ]
+    },
+    {
+      "query": "approval tiers by amount: manager sign-off and competitive quotes",
+      "chunk_ids": [
+        "2efbaf3b-63fb-5ae8-bb4a-eae3a8e4d6cc",
+        "d4bee058-0763-5031-8fd5-01ca463805c2"
+      ]
+    },
+    {
+      "query": "reject rules R1 to R6",
+      "chunk_ids": [
+        "ffaafc15-6a48-5b6e-aad7-9eb0a94bc3e0",
+        "d4bee058-0763-5031-8fd5-01ca463805c2"
+      ]
+    },
+    {
+      "query": "escalate rules E1 to E6 and their reviewers",
+      "chunk_ids": [
+        "ffaafc15-6a48-5b6e-aad7-9eb0a94bc3e0",
+        "15d06d58-cb37-524c-8f96-9c5b56890a33",
+        "2cea88c5-a254-5014-b233-ab4cef990cae"
+      ]
+    },
+    {
+      "query": "order of evaluation: reject rules take priority over escalate rules",
+      "chunk_ids": [
+        "ffaafc15-6a48-5b6e-aad7-9eb0a94bc3e0",
+        "15d06d58-cb37-524c-8f96-9c5b56890a33",
+        "2245e0f0-a9f2-5931-92f0-fd05aa410beb"
+      ]
+    },
+    {
+      "query": "department budgets remaining for Facilities",
+      "chunk_ids": [
+        "bd5bc4cd-eb10-5428-a840-0322a5274949",
+        "297e928a-d6bb-5109-9b3d-6dd4554244bf"
+      ]
+    },
+    {
+      "query": "Brightline Janitorial vendor status on the Approved Vendor List",
+      "chunk_ids": [
+        "66d993f3-2949-5503-83ba-4d457d402f40",
+        "a67b5814-a556-5fe7-bb11-f2befc26196e",
+        "d4bee058-0763-5031-8fd5-01ca463805c2"
+      ]
+    },
+    {
+      "query": "vendors with status probation or suspended",
+      "chunk_ids": [
+        "a67b5814-a556-5fe7-bb11-f2befc26196e",
+        "d4bee058-0763-5031-8fd5-01ca463805c2",
+        "15d06d58-cb37-524c-8f96-9c5b56890a33",
+        "66d993f3-2949-5503-83ba-4d457d402f40"
+      ]
+    }
+  ],
+  "memories": [
+    "Purchase request PR-009 dated 2026-11-09: Lena Fischer (Facilities) requested $3,900.00 from Brightline Janitorial for Deep-clean contract for the main warehouse floor. Decision: ESCALATE (E3)."
+  ],
+  "memories_searched": 73,
+  "tokens": {
+    "input": 5294,
+    "output": 827
+  },
+  "model": "claude-haiku-5-5"
+}

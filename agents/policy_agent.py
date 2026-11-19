@@ -3,7 +3,8 @@
 For each request the agent:
   1. opens a Meko conversation, which becomes the trace for the decision;
   2. retrieves the policy rules and reference data from Meko knowledge;
-  3. searches Meko memory for earlier requests by the same requester;
+  3. searches Meko memory for earlier requests by the same requester,
+     and works out amounts, budget, vendor status and sums in code;
   4. asks the model to check every rule, using only what was retrieved,
      and works out the decision from those checks in code;
   5. records the decision, its reasoning and token use in the trace;
@@ -12,18 +13,30 @@ For each request the agent:
 
 import json
 
+from agents.facts import code_checks, compute_facts
+
 SYSTEM_PROMPT = """You are the Policy agent for procurement at Harbor Ridge Distribution.
 
-Assess one purchase request. Use only the policy text, reference data and
-memories given in the message. Do not rely on outside knowledge of procurement.
+Assess one purchase request. Use only the policy text, reference data,
+computed facts and memories given in the message. Do not rely on outside
+knowledge of procurement.
+
+The COMPUTED FACTS block holds arithmetic and lookups already done in code:
+amount comparisons, the tier, the department budget, the vendor's status and
+any earlier requests by the same requester to the same vendor. Rely on these
+facts. Do not redo the arithmetic or override them.
+
+The CODE RULE CHECKS block gives the verdict for each rule that those facts
+settle on their own. For every rule listed there, give the same verdict. Use
+your own judgement only for rules that are not listed.
 
 Check every rule in the policy, one at a time: R1 to R6 and E1 to E6. For each
 rule, say whether its condition is met and give the specific fact that settles
 it. Mark a rule as applying only when its condition is fully met. A rule you
 considered and ruled out does not apply.
 
-A vendor that does not appear in the Approved Vendor List in the context is
-not on the list. Treat a blank or missing field as missing.
+A vendor reported as not found in the Approved Vendor List is not on the
+list. Treat a blank or missing field as missing.
 
 The system works out the final decision from your rule checks: any reject rule
 that applies means REJECT, otherwise any escalate rule that applies means
@@ -71,9 +84,29 @@ DECISION_TOOL = {
 }
 
 
-def resolve(findings):
-    """Turn the model's rule checks into a decision, in the policy's order."""
-    checks = {c["rule"]: c for c in findings["rule_checks"] if c["rule"] in RULE_IDS}
+def resolve(findings, verified=None):
+    """Turn the model's rule checks into a decision, in the policy's order.
+
+    `verified` holds the code's verdicts for rules the computed facts settle.
+    Where the model disagrees with one, the code's verdict is used and the
+    disagreement is recorded, so an auditor can see both.
+    """
+    verified = verified or {}
+    model = {c["rule"]: c for c in findings["rule_checks"] if c["rule"] in RULE_IDS}
+    checks, overrides = {}, []
+    for rule in RULE_IDS:
+        if rule in verified:
+            said = model.get(rule, {}).get("applies")
+            if said is not None and said != verified[rule]["applies"]:
+                overrides.append({
+                    "rule": rule, "model_said": said, "code_check_says": verified[rule]["applies"],
+                    "model_evidence": model[rule]["evidence"], "reason": verified[rule]["reason"],
+                })
+            checks[rule] = {"rule": rule, "applies": verified[rule]["applies"],
+                            "evidence": verified[rule]["reason"], "decided_by": "code check"}
+        elif rule in model:
+            checks[rule] = {**model[rule], "decided_by": "model"}
+
     applied = [rule for rule in RULE_IDS if checks.get(rule, {}).get("applies")]
     reject = [rule for rule in applied if rule.startswith("R")]
     escalate = [rule for rule in applied if rule.startswith("E")]
@@ -84,15 +117,25 @@ def resolve(findings):
     else:
         decision, rules = "APPROVE", []
     reviewers = sorted({REVIEWERS[rule] for rule in rules if rule in REVIEWERS})
+
+    explanation = findings["explanation"]
+    if overrides:
+        # The model's wording may describe a verdict that was overruled, so
+        # the explanation is rebuilt from the evidence for the final rules.
+        outcome = {"REJECT": "This request is rejected.",
+                   "ESCALATE": f"This request is sent to {' and '.join(reviewers)} for review.",
+                   "APPROVE": "This request is approved. No reject or escalate rule applies."}[decision]
+        explanation = " ".join([outcome] + [checks[rule]["evidence"] for rule in rules])
     return {
         "decision": decision,
         "rules": rules,
         "reviewers": reviewers,
         "tier": findings["tier"],
         "facts_used": [f"{rule}: {checks[rule]['evidence']}" for rule in rules],
-        "explanation": findings["explanation"],
+        "explanation": explanation,
         "rule_checks": [checks[rule] for rule in RULE_IDS if rule in checks],
         "rules_not_checked": [rule for rule in RULE_IDS if rule not in checks],
+        "model_overruled_by_code_checks": overrides,
     }
 
 
@@ -119,8 +162,11 @@ def memory_text(item):
     return str(item)
 
 
-def build_user_message(request, chunks, memories):
-    parts = ["PURCHASE REQUEST", json.dumps(request, indent=2), "", "RETRIEVED POLICY AND REFERENCE DATA"]
+def build_user_message(request, chunks, memories, facts, verified):
+    parts = ["PURCHASE REQUEST", json.dumps(request, indent=2), "",
+             "COMPUTED FACTS", json.dumps(facts, indent=2), "",
+             "CODE RULE CHECKS", json.dumps(verified, indent=2), "",
+             "RETRIEVED POLICY AND REFERENCE DATA"]
     for number, chunk in enumerate(chunks, start=1):
         parts += [f"[K{number}]", chunk["chunk_text"], ""]
     parts.append("MEMORIES OF EARLIER REQUESTS")
@@ -148,12 +194,17 @@ async def decide(request, meko, llm, model):
             chunks.setdefault(result["id"], result)
     chunk_list = list(chunks.values())
 
-    memory_query = (
-        f"purchase requests from {request.get('requester')} to {request.get('vendor')}"
-    )
-    memories = await meko.search_memory(conversation_id, memory_query)
+    memory_query = f"{request.get('requester')} requested from {request.get('vendor')}"
+    memories = await meko.search_memory(conversation_id, memory_query, limit=200)
 
-    user_message = build_user_message(request, chunk_list, memories)
+    # Arithmetic and lookups are done in code and recorded with their sources.
+    facts = compute_facts(request, chunk_list, memories)
+    verified = code_checks(facts)
+    related_ids = {r["memory_id"] for r in
+                   facts.get("earlier_requests_same_requester_and_vendor_within_7_days", [])}
+    relevant_memories = [m for m in memories if isinstance(m, dict) and m.get("id") in related_ids]
+
+    user_message = build_user_message(request, chunk_list, relevant_memories, facts, verified)
     response = await llm.messages.create(
         model=model,
         max_tokens=2000,
@@ -163,7 +214,9 @@ async def decide(request, meko, llm, model):
         messages=[{"role": "user", "content": user_message}],
     )
     findings = next(b.input for b in response.content if b.type == "tool_use")
-    decision = resolve(findings)
+    decision = resolve(findings, verified)
+    decision["tier"] = facts.get("tier", decision["tier"])
+    decision["computed_facts"] = facts
 
     message = await meko.add_message(
         conversation_id,
@@ -173,6 +226,7 @@ async def decide(request, meko, llm, model):
         plan=[
             "Retrieve the policy rules and reference data from Meko knowledge.",
             "Search Meko memory for earlier requests by this requester to this vendor.",
+            "Work out amounts, budget, vendor status and split-purchase sums in code.",
             "Check every rule, then apply reject rules before escalate rules.",
         ],
         metadata={
@@ -181,7 +235,9 @@ async def decide(request, meko, llm, model):
             "decision": decision["decision"],
             "rules": decision["rules"],
             "knowledge_chunk_ids": list(chunks),
-            "memories_considered": len(memories),
+            "memories_searched": len(memories),
+            "memories_used": sorted(related_ids),
+            "model_overruled_on": [o["rule"] for o in decision["model_overruled_by_code_checks"]],
             "model": model,
         },
     )
@@ -204,7 +260,14 @@ async def decide(request, meko, llm, model):
             f"${request.get('amount_usd', 0):,.2f} from {request.get('vendor')} for "
             f"{request.get('item')}. Decision: {decision['decision']} ({rules})."
         ),
-        metadata={"request_id": request_id, "decision": decision["decision"]},
+        metadata={
+            "request_id": request_id,
+            "decision": decision["decision"],
+            "requester": request.get("requester"),
+            "vendor": request.get("vendor"),
+            "amount_usd": request.get("amount_usd"),
+            "request_date": request.get("request_date"),
+        },
     )
 
     return {
@@ -212,7 +275,8 @@ async def decide(request, meko, llm, model):
         "conversation_id": conversation_id,
         "decision": decision,
         "retrieval": retrieval_log,
-        "memories": [memory_text(m) for m in memories],
+        "memories": [memory_text(m) for m in relevant_memories],
+        "memories_searched": len(memories),
         "tokens": {
             "input": response.usage.input_tokens,
             "output": response.usage.output_tokens,
