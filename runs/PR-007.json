@@ -1,13 +1,13 @@
 {
   "request_id": "PR-007",
-  "conversation_id": "eab90d703f164131836afd215d337d2b",
+  "conversation_id": "79d1872edbb14e2791880f4c5fde7053",
   "decision": {
     "decision": "APPROVE",
     "rules": [],
     "reviewers": [],
     "tier": "T3",
     "facts_used": [],
-    "explanation": "PR-007 for $22,000 from Redfern Packaging passes every check: the vendor is approved, the Operations budget covers the amount, the manager has signed off, and three quotes are attached. An earlier request from the same person to the same vendor (PR-006, $14,500, one day earlier) was considered, but the combined amount stays in the same approval tier, so it does not trigger a split-purchase escalation. The request is approved.",
+    "explanation": "PR-007 for $22,000.00 from Redfern Packaging passed every check: the request is complete, the vendor is approved, the Operations budget covers it, and it has manager sign-off and three quotes. An earlier request from the same person to the same vendor (PR-006, $14,500.00, one day earlier) was considered, but combining the two stays in the same approval tier, so it does not trigger a split-purchase escalation. The request can proceed.",
     "rule_checks": [
       {
         "rule": "R1",
@@ -42,7 +42,7 @@
       {
         "rule": "R6",
         "applies": false,
-        "evidence": "The item is annual stretch wrap for packaging, not gift cards, alcohol, or personal-use items.",
+        "evidence": "The item is stretch wrap packaging for annual operations use; it is not gift cards, alcohol, or personal-use items.",
         "decided_by": "model"
       },
       {
@@ -109,7 +109,7 @@
           "request_date": "2026-11-05",
           "amount_usd": 14500.0,
           "days_before": 1,
-          "memory_id": "2f1d9e56-164a-4ae9-ba79-f9ef2cdc1e95"
+          "memory_id": "9acfeef1-b766-455f-a8cd-63f4c5044da6"
         }
       ],
       "combined_amount_usd": 36500.0,
@@ -185,10 +185,10 @@
   "memories": [
     "Purchase request PR-006 dated 2026-11-05: Aisha Grant (Operations) requested $14,500.00 from Redfern Packaging for Bulk order of corrugated shipping boxes. Decision: REJECT (R5)."
   ],
-  "memories_searched": 71,
+  "memories_searched": 90,
   "tokens": {
-    "input": 5341,
-    "output": 856
+    "input": 5336,
+    "output": 844
   },
   "model": "claude-haiku-5-5"
 }

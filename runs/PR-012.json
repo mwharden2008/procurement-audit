@@ -1,6 +1,6 @@
 {
   "request_id": "PR-012",
-  "conversation_id": "387413324c2c460fa810bf3bc7d97b7e",
+  "conversation_id": "22cf6958bc7945d29ef93e76d65fd82a",
   "decision": {
     "decision": "ESCALATE",
     "rules": [
@@ -11,9 +11,9 @@
     ],
     "tier": "T2",
     "facts_used": [
-      "E5: The requester, Naomi Clarke, declared that her spouse is a co-owner of Halcyon Print Studio, a personal and financial relationship with the vendor."
+      "E5: Requester Naomi Clarke declared that her spouse is a co-owner of Halcyon Print Studio, a personal and financial relationship with the vendor."
     ],
-    "explanation": "Request PR-012 for $2,100 from Marketing to Halcyon Print Studio passes all the reject checks: the vendor is approved, the budget covers it, and the manager sign-off is recorded. It must still be escalated because the requester has declared that her spouse co-owns the vendor, so a Compliance Officer must review it before it can proceed.",
+    "explanation": "No reject rules apply: the request is complete, the vendor is approved, the amount fits the Marketing budget, and the manager has signed off. However, the requester has declared that her spouse co-owns the vendor, Halcyon Print Studio, so the request must be escalated to the Compliance Officer for review before it can proceed.",
     "rule_checks": [
       {
         "rule": "R1",
@@ -48,7 +48,7 @@
       {
         "rule": "R6",
         "applies": false,
-        "evidence": "Request is for trade show banners and table covers for a business expo booth, not gift cards, alcohol, or personal-use items.",
+        "evidence": "Item is trade show banners and table covers for a business expo booth; not gift cards, alcohol, or personal-use items.",
         "decided_by": "model"
       },
       {
@@ -78,7 +78,7 @@
       {
         "rule": "E5",
         "applies": true,
-        "evidence": "The requester, Naomi Clarke, declared that her spouse is a co-owner of Halcyon Print Studio, a personal and financial relationship with the vendor.",
+        "evidence": "Requester Naomi Clarke declared that her spouse is a co-owner of Halcyon Print Studio, a personal and financial relationship with the vendor.",
         "decided_by": "model"
       },
       {
@@ -176,10 +176,10 @@
     }
   ],
   "memories": [],
-  "memories_searched": 60,
+  "memories_searched": 77,
   "tokens": {
     "input": 4998,
-    "output": 805
+    "output": 791
   },
   "model": "claude-haiku-5-5"
 }

@@ -1,6 +1,6 @@
 {
   "request_id": "PR-004",
-  "conversation_id": "8d100105e2b54cdba4bcce52c2ce25f2",
+  "conversation_id": "9869c61f11d9471fbed00fd6028dca4e",
   "decision": {
     "decision": "REJECT",
     "rules": [
@@ -11,7 +11,7 @@
     "facts_used": [
       "R2: The vendor's status on the Approved Vendor List is 'suspended'."
     ],
-    "explanation": "Request PR-004 must be rejected because Apex Forklift Leasing is currently suspended from the Approved Vendor List, after its liability insurance lapsed in September 2026. Suspended vendors are not eligible, so the purchase cannot proceed as submitted. The requester may resubmit with an eligible vendor.",
+    "explanation": "Request PR-004 is rejected because Apex Forklift Leasing is currently suspended from the Approved Vendor List, after its liability insurance lapsed in September 2026. Suspended vendors are not eligible for purchases, so the request cannot proceed as submitted. The requester can resubmit with a different eligible vendor, and the other checks (budget, sign-off, and conflict of interest) passed.",
     "rule_checks": [
       {
         "rule": "R1",
@@ -46,7 +46,7 @@
       {
         "rule": "R6",
         "applies": false,
-        "evidence": "The item is a three-month forklift lease for warehouse use, not gift cards, alcohol or personal items.",
+        "evidence": "The item is a three-month forklift lease for warehouse use, not gift cards, alcohol, or personal-use items.",
         "decided_by": "model"
       },
       {
@@ -76,7 +76,7 @@
       {
         "rule": "E5",
         "applies": false,
-        "evidence": "The requester declared no conflict of interest.",
+        "evidence": "The requester has not declared a conflict of interest (conflict_of_interest_declared is false).",
         "decided_by": "model"
       },
       {
@@ -173,10 +173,10 @@
     }
   ],
   "memories": [],
-  "memories_searched": 67,
+  "memories_searched": 86,
   "tokens": {
     "input": 4967,
-    "output": 809
+    "output": 883
   },
   "model": "claude-haiku-5-5"
 }

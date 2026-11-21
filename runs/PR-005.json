@@ -1,6 +1,6 @@
 {
   "request_id": "PR-005",
-  "conversation_id": "ef91baed647a48b987370d40a50c8f06",
+  "conversation_id": "f365f9d487d540cdbd2eaa2e0a324820",
   "decision": {
     "decision": "REJECT",
     "rules": [
@@ -9,9 +9,9 @@
     "reviewers": [],
     "tier": "T2",
     "facts_used": [
-      "R2: Quickship Depot is not among the 10 vendors in the retrieved Approved Vendor List, so it is not eligible. Vendor status is 'vendor not found'."
+      "R2: Quickship Depot is not among the 10 vendors on the Approved Vendor List, so it is not eligible."
     ],
-    "explanation": "Request PR-005 is rejected because Quickship Depot is not on the Approved Vendor List, so it is not an eligible supplier. The request is otherwise in order: all details are complete, the $1,250 amount fits the Operations budget, and the manager sign-off is recorded. The requester can fix this by choosing an approved vendor and resubmitting.",
+    "explanation": "Quickship Depot is not on the Approved Vendor List, so the vendor is not eligible and the request must be rejected (R2). The other checks passed: the request is complete, the amount is within the Operations budget, and the manager sign-off is recorded. The requester can fix the vendor issue and resubmit, for example by using an approved vendor.",
     "rule_checks": [
       {
         "rule": "R1",
@@ -22,7 +22,7 @@
       {
         "rule": "R2",
         "applies": true,
-        "evidence": "Quickship Depot is not among the 10 vendors in the retrieved Approved Vendor List, so it is not eligible. Vendor status is 'vendor not found'.",
+        "evidence": "Quickship Depot is not among the 10 vendors on the Approved Vendor List, so it is not eligible.",
         "decided_by": "model"
       },
       {
@@ -46,7 +46,7 @@
       {
         "rule": "R6",
         "applies": false,
-        "evidence": "Category is office_supplies and the item is thermal label printers for packing stations; no gift cards, alcohol, or personal-use items.",
+        "evidence": "Five thermal label printers for packing stations are not gift cards, alcohol, or personal-use items.",
         "decided_by": "model"
       },
       {
@@ -64,7 +64,7 @@
       {
         "rule": "E3",
         "applies": false,
-        "evidence": "Vendor status is not 'probation'; the vendor is not on the list at all.",
+        "evidence": "Vendor is not on the list, so its status is not 'probation'.",
         "decided_by": "model"
       },
       {
@@ -76,7 +76,7 @@
       {
         "rule": "E5",
         "applies": false,
-        "evidence": "Conflict of interest declared is false.",
+        "evidence": "No conflict of interest declared.",
         "decided_by": "model"
       },
       {
@@ -174,10 +174,10 @@
     }
   ],
   "memories": [],
-  "memories_searched": 67,
+  "memories_searched": 86,
   "tokens": {
     "input": 4921,
-    "output": 786
+    "output": 719
   },
   "model": "claude-haiku-5-5"
 }

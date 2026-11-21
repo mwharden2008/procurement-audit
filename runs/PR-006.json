@@ -1,6 +1,6 @@
 {
   "request_id": "PR-006",
-  "conversation_id": "c30b918cd6f844209c9b3cced3657daa",
+  "conversation_id": "b7a28ff0e88641619caf7aa1fccbc956",
   "decision": {
     "decision": "REJECT",
     "rules": [
@@ -11,7 +11,7 @@
     "facts_used": [
       "R5: $14,500.00 is $10,000 or more with 1 quote(s) attached and no sole-source justification."
     ],
-    "explanation": "Request PR-006 is rejected because it includes only one supplier quote for a $14,500 purchase, and purchases of $10,000 or more need three quotes unless a sole-source justification is attached. The other checks passed: the vendor is approved, the Operations budget covers the amount, and the manager sign-off is recorded. The requester can fix this by attaching two more quotes or a sole-source justification and resubmitting.",
+    "explanation": "Request PR-006 is rejected because it is for $14,500 but includes only one price quote, and purchases of $10,000 or more need at least three quotes. The vendor is approved, the Operations budget covers the amount, and the manager sign-off is recorded. To proceed, the requester can obtain two more quotes or attach a sole-source justification and resubmit.",
     "rule_checks": [
       {
         "rule": "R1",
@@ -46,7 +46,7 @@
       {
         "rule": "R6",
         "applies": false,
-        "evidence": "The request is for corrugated shipping boxes for business use, not gift cards, alcohol, or personal items.",
+        "evidence": "The request is for corrugated shipping boxes, not gift cards, alcohol, or personal-use items.",
         "decided_by": "model"
       },
       {
@@ -175,10 +175,10 @@
     }
   ],
   "memories": [],
-  "memories_searched": 70,
+  "memories_searched": 89,
   "tokens": {
     "input": 5053,
-    "output": 754
+    "output": 784
   },
   "model": "claude-haiku-5-5"
 }

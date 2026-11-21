@@ -1,6 +1,6 @@
 {
   "request_id": "PR-009",
-  "conversation_id": "be750fd3b998460c8a372163231d90dd",
+  "conversation_id": "8f7fdbf44e954e478561ecc0e0a24641",
   "decision": {
     "decision": "ESCALATE",
     "rules": [
@@ -13,7 +13,7 @@
     "facts_used": [
       "E3: The vendor's status is 'probation' and $3,900.00 is more than $2,500."
     ],
-    "explanation": "Request PR-009 for a $3,900 floor deep-clean from Brightline Janitorial passes all reject checks. It is sent for escalation because Brightline is on probation status and the amount is over $2,500, so the Procurement Manager must review it before it can proceed.",
+    "explanation": "No reject rule applies, so the request is not blocked. It must be escalated because Brightline Janitorial is on probation and this request is over $2,500 ($3,900). The Procurement Manager needs to review it before it can proceed.",
     "rule_checks": [
       {
         "rule": "R1",
@@ -48,7 +48,7 @@
       {
         "rule": "R6",
         "applies": false,
-        "evidence": "Request is for a warehouse floor deep-clean contract, not gift cards, alcohol, or personal-use items.",
+        "evidence": "Deep-clean floor service contract is not gift cards, alcohol, or personal-use items.",
         "decided_by": "model"
       },
       {
@@ -78,7 +78,7 @@
       {
         "rule": "E5",
         "applies": false,
-        "evidence": "No conflict of interest declared; conflict_of_interest_declared is false.",
+        "evidence": "No conflict of interest declared; computed fact conflict_of_interest_declared is false.",
         "decided_by": "model"
       },
       {
@@ -176,10 +176,10 @@
     }
   ],
   "memories": [],
-  "memories_searched": 72,
+  "memories_searched": 91,
   "tokens": {
     "input": 5047,
-    "output": 792
+    "output": 779
   },
   "model": "claude-haiku-5-5"
 }

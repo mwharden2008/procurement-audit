@@ -1,13 +1,13 @@
 {
   "request_id": "PR-002",
-  "conversation_id": "6f43629a005d461691ef173beb5ae6ae",
+  "conversation_id": "558d64e843fd4c34857560c7137671a0",
   "decision": {
     "decision": "APPROVE",
     "rules": [],
     "reviewers": [],
     "tier": "T2",
     "facts_used": [],
-    "explanation": "Request PR-002 for $7,800.00 from the Warehouse department meets every requirement: the form is complete, the vendor is approved, the Warehouse budget covers the amount, and the manager has signed off. No rule requires rejection or escalation, so the request can be approved.",
+    "explanation": "Request PR-002 for six bays of pallet racking from Ironclad Pallet & Rack ($7,800) is approved. The vendor is approved, the Warehouse budget covers the amount, and the manager sign-off is in place. No reject or escalate rule applies.",
     "rule_checks": [
       {
         "rule": "R1",
@@ -42,7 +42,7 @@
       {
         "rule": "R6",
         "applies": false,
-        "evidence": "Request is for six bays of pallet racking for aisle 14, not gift cards, alcohol, or personal items.",
+        "evidence": "Request is for six bays of pallet racking for aisle 14, not gift cards, alcohol, or personal-use items.",
         "decided_by": "model"
       },
       {
@@ -169,10 +169,10 @@
     }
   ],
   "memories": [],
-  "memories_searched": 66,
+  "memories_searched": 85,
   "tokens": {
     "input": 4977,
-    "output": 744
+    "output": 748
   },
   "model": "claude-haiku-5-5"
 }
