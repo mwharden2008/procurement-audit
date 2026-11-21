@@ -1,6 +1,6 @@
 {
   "request_id": "PR-012",
-  "conversation_id": "22cf6958bc7945d29ef93e76d65fd82a",
+  "conversation_id": "e2eace890b83433ab5a48cfc44974aa7",
   "decision": {
     "decision": "ESCALATE",
     "rules": [
@@ -11,9 +11,9 @@
     ],
     "tier": "T2",
     "facts_used": [
-      "E5: Requester Naomi Clarke declared that her spouse is a co-owner of Halcyon Print Studio, a personal and financial relationship with the vendor."
+      "E5: The requester's spouse is a co-owner of Halcyon Print Studio, and the conflict of interest is declared (conflict_of_interest_declared: true)."
     ],
-    "explanation": "No reject rules apply: the request is complete, the vendor is approved, the amount fits the Marketing budget, and the manager has signed off. However, the requester has declared that her spouse co-owns the vendor, Halcyon Print Studio, so the request must be escalated to the Compliance Officer for review before it can proceed.",
+    "explanation": "This request is not rejected, but it must be reviewed by the Compliance Officer before it can go ahead. The requester's spouse is a co-owner of Halcyon Print Studio, and the conflict of interest is declared (conflict_of_interest_declared: true).",
     "rule_checks": [
       {
         "rule": "R1",
@@ -48,7 +48,7 @@
       {
         "rule": "R6",
         "applies": false,
-        "evidence": "Item is trade show banners and table covers for a business expo booth; not gift cards, alcohol, or personal-use items.",
+        "evidence": "Trade show banners and table covers are marketing materials, not gift cards, alcohol, or personal-use items.",
         "decided_by": "model"
       },
       {
@@ -78,7 +78,7 @@
       {
         "rule": "E5",
         "applies": true,
-        "evidence": "Requester Naomi Clarke declared that her spouse is a co-owner of Halcyon Print Studio, a personal and financial relationship with the vendor.",
+        "evidence": "The requester's spouse is a co-owner of Halcyon Print Studio, and the conflict of interest is declared (conflict_of_interest_declared: true).",
         "decided_by": "model"
       },
       {
@@ -112,6 +112,37 @@
       "earlier_requests_same_requester_and_vendor_within_7_days": []
     }
   },
+  "steps": [
+    {
+      "step": 1,
+      "agent_role": "intake",
+      "message_id": "23aaf3b62d5782dd8fdc63fc8ad07d34",
+      "status": "accepted",
+      "summary": "Intake extracted the request fields. Every required field is filled in.",
+      "missing_required_fields": []
+    },
+    {
+      "step": 2,
+      "agent_role": "policy",
+      "message_id": "842407b99775d0bd1ba6a7e370a8d96d",
+      "rules_that_apply": [
+        "E5"
+      ],
+      "model_overruled_on": []
+    },
+    {
+      "step": 3,
+      "agent_role": "approver",
+      "message_id": "9f1b6a6648565d5d3faf66668b3dc497",
+      "decision": "ESCALATE",
+      "rules": [
+        "E5"
+      ],
+      "reviewers": [
+        "Compliance Officer"
+      ]
+    }
+  ],
   "retrieval": [
     {
       "query": "required information a purchase request must include",
@@ -176,10 +207,10 @@
     }
   ],
   "memories": [],
-  "memories_searched": 77,
+  "memories_searched": 119,
   "tokens": {
     "input": 4998,
-    "output": 791
+    "output": 814
   },
   "model": "claude-haiku-5-5"
 }

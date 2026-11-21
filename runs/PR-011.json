@@ -1,6 +1,6 @@
 {
   "request_id": "PR-011",
-  "conversation_id": "5ea276da80e049efa822cdfea3d84afa",
+  "conversation_id": "f520451172a24df3bbe37bcd6dd3791f",
   "decision": {
     "decision": "ESCALATE",
     "rules": [
@@ -13,7 +13,7 @@
     "facts_used": [
       "E4: The category is IT hardware or software and the item is not in the Pre-Approved IT Catalog."
     ],
-    "explanation": "No reject rules apply: the vendor is approved, the budget covers the $4,300 cost, and the manager sign-off is recorded. The request is escalated because the item, a GPU workstation, is IT hardware that is not on the Pre-Approved IT Catalog, so it must go to IT Security for review. Reviewer: IT Security.",
+    "explanation": "This request is not rejected, but it must be reviewed by the IT Security team before it can go ahead. The category is IT hardware or software and the item is not in the Pre-Approved IT Catalog.",
     "rule_checks": [
       {
         "rule": "R1",
@@ -48,7 +48,7 @@
       {
         "rule": "R6",
         "applies": false,
-        "evidence": "The item is a GPU workstation for modeling, not a gift card, alcohol, or personal-use item.",
+        "evidence": "The item is a GPU workstation for route-optimization modeling, not gift cards, alcohol, or personal use.",
         "decided_by": "model"
       },
       {
@@ -78,7 +78,7 @@
       {
         "rule": "E5",
         "applies": false,
-        "evidence": "No conflict of interest has been declared by the requester.",
+        "evidence": "No conflict of interest is declared.",
         "decided_by": "model"
       },
       {
@@ -122,7 +122,7 @@
           "request_date": "2026-11-03",
           "amount_usd": 5600.0,
           "days_before": 7,
-          "memory_id": "24c9f783-2de2-4649-806c-33002a8b60b8"
+          "memory_id": "877e488a-a6e0-4b96-8aa0-4adcdf0665a6"
         }
       ],
       "combined_amount_usd": 9900.0,
@@ -131,6 +131,37 @@
       "combined_tier_is_higher_than_each_request_alone": false
     }
   },
+  "steps": [
+    {
+      "step": 1,
+      "agent_role": "intake",
+      "message_id": "a3158a3f27538d7e010f802d0c7dfa99",
+      "status": "accepted",
+      "summary": "Intake extracted the request fields. Every required field is filled in.",
+      "missing_required_fields": []
+    },
+    {
+      "step": 2,
+      "agent_role": "policy",
+      "message_id": "cf2290fe2db9494f788805630cfa7abb",
+      "rules_that_apply": [
+        "E4"
+      ],
+      "model_overruled_on": []
+    },
+    {
+      "step": 3,
+      "agent_role": "approver",
+      "message_id": "096bb9ab875d77ce021edc12a0325fce",
+      "decision": "ESCALATE",
+      "rules": [
+        "E4"
+      ],
+      "reviewers": [
+        "IT Security"
+      ]
+    }
+  ],
   "retrieval": [
     {
       "query": "required information a purchase request must include",
@@ -209,10 +240,10 @@
   "memories": [
     "Purchase request PR-003 dated 2026-11-03: Tomas Reyes (IT) requested $5,600.00 from Corvid Systems for Four Corvid C14 standard laptops for new hires. Decision: APPROVE (no rules cited)."
   ],
-  "memories_searched": 90,
+  "memories_searched": 183,
   "tokens": {
-    "input": 5849,
-    "output": 866
+    "input": 5853,
+    "output": 887
   },
   "model": "claude-haiku-5-5"
 }

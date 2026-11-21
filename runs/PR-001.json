@@ -1,13 +1,13 @@
 {
   "request_id": "PR-001",
-  "conversation_id": "4cfb2d5d719644398c94001a875539ae",
+  "conversation_id": "fa4155bebfb4438886d56b92dbe009b4",
   "decision": {
     "decision": "APPROVE",
     "rules": [],
     "reviewers": [],
     "tier": "T1",
     "facts_used": [],
-    "explanation": "Request PR-001 for $420.00 from HR to Summit Office Supply, an approved vendor, passes every check. The HR department has $12,000.00 left in its budget for the quarter, and the amount is small enough that no manager sign-off, quotes, or extra review are needed. The request is approved.",
+    "explanation": "This request is approved. It meets every rule in the procurement policy. The vendor is on the Approved Vendor List with status 'approved'. $420.00 is within the department's remaining budget of $12,000.00. $420.00 is under $1,000, so no manager sign-off is needed.",
     "rule_checks": [
       {
         "rule": "R1",
@@ -42,7 +42,7 @@
       {
         "rule": "R6",
         "applies": false,
-        "evidence": "Printer paper and toner cartridges for the HR office are office supplies, not gift cards, alcohol, or personal-use items.",
+        "evidence": "Printer paper and toner for the HR office are office supplies, not gift cards, alcohol, or personal-use items.",
         "decided_by": "model"
       },
       {
@@ -72,7 +72,7 @@
       {
         "rule": "E5",
         "applies": false,
-        "evidence": "Conflict of interest declared is false.",
+        "evidence": "The conflict of interest field is false; no personal or financial relationship with the vendor has been declared.",
         "decided_by": "model"
       },
       {
@@ -106,6 +106,31 @@
       "earlier_requests_same_requester_and_vendor_within_7_days": []
     }
   },
+  "steps": [
+    {
+      "step": 1,
+      "agent_role": "intake",
+      "message_id": "46bd3bfaee84224bc365cb6041baf7ae",
+      "status": "accepted",
+      "summary": "Intake extracted the request fields. Every required field is filled in.",
+      "missing_required_fields": []
+    },
+    {
+      "step": 2,
+      "agent_role": "policy",
+      "message_id": "61265fb646283ebe62e26c5906252fcd",
+      "rules_that_apply": [],
+      "model_overruled_on": []
+    },
+    {
+      "step": 3,
+      "agent_role": "approver",
+      "message_id": "5902e30844158a74d2cb1cf6db98ea80",
+      "decision": "APPROVE",
+      "rules": [],
+      "reviewers": []
+    }
+  ],
   "retrieval": [
     {
       "query": "required information a purchase request must include",
@@ -170,10 +195,10 @@
     }
   ],
   "memories": [],
-  "memories_searched": 84,
+  "memories_searched": 162,
   "tokens": {
     "input": 4932,
-    "output": 707
+    "output": 714
   },
   "model": "claude-haiku-5-5"
 }

@@ -1,6 +1,6 @@
 {
   "request_id": "PR-018",
-  "conversation_id": "7558297aa294457b8f7f05d8d4576a39",
+  "conversation_id": "5326492ce03941338a7dac73e8f7db99",
   "decision": {
     "decision": "REJECT",
     "rules": [
@@ -11,7 +11,7 @@
     "facts_used": [
       "R4: $1,600.00 is $1,000 or more and a manager sign-off is not recorded."
     ],
-    "explanation": "Request PR-018 is for $1,600 of hand trucks from an approved vendor with enough budget left, but it has no manager sign-off, which is required for purchases of $1,000 or more. Because of this missing sign-off, the request is rejected. The requester can obtain the manager's sign-off and resubmit.",
+    "explanation": "This request is rejected. $1,600.00 is $1,000 or more and a manager sign-off is not recorded.",
     "rule_checks": [
       {
         "rule": "R1",
@@ -46,7 +46,7 @@
       {
         "rule": "R6",
         "applies": false,
-        "evidence": "Item is heavy-duty hand trucks for the loading dock, not gift cards, alcohol, or personal-use items.",
+        "evidence": "The item is eight heavy-duty hand trucks for the loading dock, not gift cards, alcohol, or personal-use items.",
         "decided_by": "model"
       },
       {
@@ -76,7 +76,7 @@
       {
         "rule": "E5",
         "applies": false,
-        "evidence": "Conflict of interest declared is false.",
+        "evidence": "The requester has declared no conflict of interest.",
         "decided_by": "model"
       },
       {
@@ -110,6 +110,35 @@
       "earlier_requests_same_requester_and_vendor_within_7_days": []
     }
   },
+  "steps": [
+    {
+      "step": 1,
+      "agent_role": "intake",
+      "message_id": "4a35bdab8013fc4b847c71f4e1421bc3",
+      "status": "accepted",
+      "summary": "Intake extracted the request fields. Every required field is filled in.",
+      "missing_required_fields": []
+    },
+    {
+      "step": 2,
+      "agent_role": "policy",
+      "message_id": "f96af193f61ac7f3a9ccaa3a06234043",
+      "rules_that_apply": [
+        "R4"
+      ],
+      "model_overruled_on": []
+    },
+    {
+      "step": 3,
+      "agent_role": "approver",
+      "message_id": "cf21819077194875d31fd2883edd0c89",
+      "decision": "REJECT",
+      "rules": [
+        "R4"
+      ],
+      "reviewers": []
+    }
+  ],
   "retrieval": [
     {
       "query": "required information a purchase request must include",
@@ -173,10 +202,10 @@
     }
   ],
   "memories": [],
-  "memories_searched": 101,
+  "memories_searched": 200,
   "tokens": {
     "input": 4968,
-    "output": 765
+    "output": 722
   },
   "model": "claude-haiku-5-5"
 }

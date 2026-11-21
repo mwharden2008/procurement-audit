@@ -1,6 +1,6 @@
 {
   "request_id": "PR-009",
-  "conversation_id": "8f7fdbf44e954e478561ecc0e0a24641",
+  "conversation_id": "ea053165b19a420a85ed4ef7dac69ea8",
   "decision": {
     "decision": "ESCALATE",
     "rules": [
@@ -13,7 +13,7 @@
     "facts_used": [
       "E3: The vendor's status is 'probation' and $3,900.00 is more than $2,500."
     ],
-    "explanation": "No reject rule applies, so the request is not blocked. It must be escalated because Brightline Janitorial is on probation and this request is over $2,500 ($3,900). The Procurement Manager needs to review it before it can proceed.",
+    "explanation": "This request is not rejected, but it must be reviewed by the Procurement Manager before it can go ahead. The vendor's status is 'probation' and $3,900.00 is more than $2,500.",
     "rule_checks": [
       {
         "rule": "R1",
@@ -48,7 +48,7 @@
       {
         "rule": "R6",
         "applies": false,
-        "evidence": "Deep-clean floor service contract is not gift cards, alcohol, or personal-use items.",
+        "evidence": "The request is for a floor deep-clean service for the warehouse, not gift cards, alcohol, or personal-use items.",
         "decided_by": "model"
       },
       {
@@ -78,7 +78,7 @@
       {
         "rule": "E5",
         "applies": false,
-        "evidence": "No conflict of interest declared; computed fact conflict_of_interest_declared is false.",
+        "evidence": "No conflict of interest is declared by the requester.",
         "decided_by": "model"
       },
       {
@@ -112,6 +112,37 @@
       "earlier_requests_same_requester_and_vendor_within_7_days": []
     }
   },
+  "steps": [
+    {
+      "step": 1,
+      "agent_role": "intake",
+      "message_id": "45e537af1b077fa2d23a3f479324673b",
+      "status": "accepted",
+      "summary": "Intake extracted the request fields. Every required field is filled in.",
+      "missing_required_fields": []
+    },
+    {
+      "step": 2,
+      "agent_role": "policy",
+      "message_id": "5e3fca5f62df41f77b6370168ed6bdf8",
+      "rules_that_apply": [
+        "E3"
+      ],
+      "model_overruled_on": []
+    },
+    {
+      "step": 3,
+      "agent_role": "approver",
+      "message_id": "90e884f5a8212e8f82d9e0acf815d5c3",
+      "decision": "ESCALATE",
+      "rules": [
+        "E3"
+      ],
+      "reviewers": [
+        "Procurement Manager"
+      ]
+    }
+  ],
   "retrieval": [
     {
       "query": "required information a purchase request must include",
@@ -176,10 +207,10 @@
     }
   ],
   "memories": [],
-  "memories_searched": 91,
+  "memories_searched": 168,
   "tokens": {
     "input": 5047,
-    "output": 779
+    "output": 808
   },
   "model": "claude-haiku-5-5"
 }

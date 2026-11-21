@@ -38,6 +38,80 @@ def find_in_chunks(pattern, chunks):
     return None, None
 
 
+VENDOR_LIST_START = re.compile(r'"approved_vendor_list":\s*\[')
+VENDOR_ENTRY = re.compile(r'\{"vendor_id":\s*"[^"]+"[^{}]*\}')
+
+
+class IncompleteReferenceData(RuntimeError):
+    """The retrieved reference data is not complete enough to decide the request."""
+
+
+def _vendor_list_piece(chunk):
+    """The part of the Approved Vendor List one chunk holds, or None."""
+    text = chunk.get("chunk_text", "")
+    start = VENDOR_LIST_START.search(text)
+    body = text[start.end():] if start else text
+    matches = list(VENDOR_ENTRY.finditer(body))
+    if not matches and not start:
+        return None
+    rest = body[matches[-1].end():] if matches else body
+    closes = bool(matches) and rest.lstrip(" \t\r\n,").startswith("]")
+    partial = "" if closes or '{"vendor_id"' not in rest else rest[rest.find('{"vendor_id"'):].strip()
+    return {"id": chunk.get("id"), "starts": bool(start), "closes": closes,
+            "entries": [m.group(0) for m in matches], "partial": partial}
+
+
+def vendor_list(chunks):
+    """Reassemble the Approved Vendor List from the retrieved chunks.
+
+    Meko may split the list across chunks, so the pieces are joined end to end.
+    The list counts as complete only when the chunk that opens the list was
+    retrieved, each following piece overlaps the one before it (so nothing in
+    between can be missing), and the last piece closes the list. Nothing here
+    assumes how many vendors there are.
+    """
+    pieces = [p for p in (_vendor_list_piece(c) for c in chunks) if p]
+    start = next((p for p in pieces if p["starts"]), None)
+    if start is None:
+        return {"complete": False, "vendors": [], "source_chunks": [],
+                "reason": "the start of the Approved Vendor List was not retrieved"}
+
+    entries, partial, closed = list(start["entries"]), start["partial"], start["closes"]
+    used = [start["id"]]
+    while not closed:
+        for piece in pieces:
+            if piece["id"] in used or not piece["entries"]:
+                continue
+            first = piece["entries"][0]
+            if first in entries:
+                overlap = entries[entries.index(first):]
+                if piece["entries"][:len(overlap)] != overlap:
+                    continue
+                new = piece["entries"][len(overlap):]
+            elif partial and first.startswith(partial):
+                new = piece["entries"]
+            else:
+                continue
+            entries += new
+            partial, closed = piece["partial"], piece["closes"]
+            used.append(piece["id"])
+            break
+        else:
+            return {"complete": False, "vendors": _parse(entries), "source_chunks": used,
+                    "reason": (f"the retrieved text holds the start of the Approved Vendor List "
+                               f"and {len(entries)} vendor(s), but not the rest of the list")}
+    return {"complete": True, "vendors": _parse(entries), "source_chunks": used,
+            "reason": "the whole Approved Vendor List was retrieved, from its start to its end"}
+
+
+def _parse(entries):
+    vendors = []
+    for entry in entries:
+        fields = dict(re.findall(r'"(vendor_id|name|status)":\s*"([^"]*)"', entry))
+        vendors.append({k: fields.get(k) for k in ("vendor_id", "name", "status")})
+    return vendors
+
+
 def related_requests(request, memories):
     """Earlier requests by the same requester to the same vendor, from Meko memory.
 
@@ -107,13 +181,19 @@ def compute_facts(request, chunks, memories):
     vendor = request.get("vendor") or ""
     status, source = find_in_chunks(
         rf'"name":\s*"{re.escape(vendor)}",\s*"status":\s*"(\w+)"', chunks)
-    seen = {v for c in chunks for v in re.findall(r'"vendor_id":\s*"([^"]+)"', c.get("chunk_text", ""))}
-    if status is None:
-        facts["vendor_status"] = (
-            f"vendor not found among the {len(seen)} vendors in the retrieved Approved Vendor List")
-    else:
+    if status is not None:
         facts["vendor_status"] = status
         facts["vendor_status_source_chunk"] = source
+    else:
+        listing = vendor_list(chunks)
+        facts["vendor_list_complete"] = listing["complete"]
+        facts["vendor_list_check"] = listing["reason"]
+        facts["vendor_list_source_chunks"] = listing["source_chunks"]
+        if listing["complete"]:
+            facts["vendor_status"] = "not on the list"
+            facts["vendor_list_vendor_count"] = len(listing["vendors"])
+        else:
+            facts["vendor_status"] = "unknown: not found in the part of the list that was retrieved"
 
     catalog = set()
     for chunk in chunks:
@@ -143,6 +223,20 @@ def compute_facts(request, chunks, memories):
     return facts
 
 
+def require_complete_reference_data(facts):
+    """Stop the decision when the facts rest on part of the reference data.
+
+    A vendor that is not in the retrieved part of the Approved Vendor List may
+    still be on the list, so no decision is made: the request fails and can be
+    retried, rather than being judged (or approved) on partial data.
+    """
+    if facts.get("vendor_list_complete") is False:
+        raise IncompleteReferenceData(
+            f"The vendor was not found and {facts['vendor_list_check']}, so it is not known "
+            f"whether the vendor is on the Approved Vendor List. No decision was made; "
+            f"run the request again to retry the retrieval.")
+
+
 def money(amount):
     return f"${amount:,.2f}"
 
@@ -153,6 +247,7 @@ def code_checks(facts):
     Returns {rule: {"applies": bool, "reason": str}}. A rule is left out when
     the facts cannot settle it, and the model's judgement stands for that rule.
     R6 (prohibited item) and E5 (conflict of interest) are always left to the model.
+    A vendor missing from the list settles R2 only when the whole list was retrieved.
     """
     checks = {}
 
@@ -171,8 +266,12 @@ def code_checks(facts):
         settle("R2", False, f"The vendor is on the Approved Vendor List with status '{status}'.")
     elif status == "suspended":
         settle("R2", True, "The vendor's status on the Approved Vendor List is 'suspended'.")
-    # A vendor that was not found is left to the model: the retrieved text
-    # may not hold the whole vendor list, so code cannot be sure it is absent.
+    elif status == "not on the list" and facts.get("vendor_list_complete"):
+        settle("R2", True, f"The vendor is not on the Approved Vendor List. The whole list "
+                           f"({facts['vendor_list_vendor_count']} vendors) was retrieved and "
+                           f"does not include it.")
+    # A vendor missing from an incomplete list is never settled here: the
+    # Policy agent stops the request instead (require_complete_reference_data).
 
     if "department_budget_remaining_usd" in facts:
         budget = facts["department_budget_remaining_usd"]
@@ -206,6 +305,8 @@ def code_checks(facts):
         applies = status == "probation" and facts["amount_is_more_than_2500"]
         settle("E3", applies, f"The vendor's status is '{status}' and {money(amount)} is "
                               f"{'more than' if facts['amount_is_more_than_2500'] else 'not more than'} $2,500.")
+    elif status == "not on the list" and facts.get("vendor_list_complete"):
+        settle("E3", False, "The vendor is not on the Approved Vendor List, so it is not on probation.")
 
     if not facts["category_is_it_hardware_or_software"]:
         settle("E4", False, "The category is not IT hardware or software.")

@@ -1,6 +1,6 @@
 {
   "request_id": "PR-016",
-  "conversation_id": "9b272231fac04281b57ffcdf1cd547d3",
+  "conversation_id": "34fd4594860d4166b6d3b70a0b68202a",
   "decision": {
     "decision": "ESCALATE",
     "rules": [
@@ -16,7 +16,7 @@
       "E2: $11,400.00 is $10,000 or more and a sole-source justification is attached.",
       "E4: The category is IT hardware or software and the item is not in the Pre-Approved IT Catalog."
     ],
-    "explanation": "No reject rules apply, so the request is not rejected. It is escalated because it is a high-value purchase (T3 tier, $11,400) made with a sole-source justification instead of three quotes, which goes to the Procurement Manager. It is also escalated to IT Security because it is software that is not on the Pre-Approved IT Catalog.",
+    "explanation": "This request is not rejected, but it must be reviewed by the IT Security team and the Procurement Manager before it can go ahead. $11,400.00 is $10,000 or more and a sole-source justification is attached. The category is IT hardware or software and the item is not in the Pre-Approved IT Catalog.",
     "rule_checks": [
       {
         "rule": "R1",
@@ -51,7 +51,7 @@
       {
         "rule": "R6",
         "applies": false,
-        "evidence": "Request is for a business analytics software license for campaigns; not gift cards, alcohol, or personal use.",
+        "evidence": "Analytics software license is not a gift card, alcohol, or personal-use item.",
         "decided_by": "model"
       },
       {
@@ -81,7 +81,7 @@
       {
         "rule": "E5",
         "applies": false,
-        "evidence": "Conflict of interest declared is false; no relationship declared.",
+        "evidence": "Conflict of interest is declared as false; no personal or financial relationship with the vendor is reported.",
         "decided_by": "model"
       },
       {
@@ -122,6 +122,40 @@
       "earlier_requests_same_requester_and_vendor_within_7_days": []
     }
   },
+  "steps": [
+    {
+      "step": 1,
+      "agent_role": "intake",
+      "message_id": "4dea2ce0b3244c574e95fc4cf6758179",
+      "status": "accepted",
+      "summary": "Intake extracted the request fields. Every required field is filled in.",
+      "missing_required_fields": []
+    },
+    {
+      "step": 2,
+      "agent_role": "policy",
+      "message_id": "c9247e807989c2648a129d4b43472984",
+      "rules_that_apply": [
+        "E2",
+        "E4"
+      ],
+      "model_overruled_on": []
+    },
+    {
+      "step": 3,
+      "agent_role": "approver",
+      "message_id": "6be0064481bd03b72567808f74f118d1",
+      "decision": "ESCALATE",
+      "rules": [
+        "E2",
+        "E4"
+      ],
+      "reviewers": [
+        "IT Security",
+        "Procurement Manager"
+      ]
+    }
+  ],
   "retrieval": [
     {
       "query": "required information a purchase request must include",
@@ -196,10 +230,10 @@
     }
   ],
   "memories": [],
-  "memories_searched": 94,
+  "memories_searched": 180,
   "tokens": {
     "input": 5521,
-    "output": 791
+    "output": 860
   },
   "model": "claude-haiku-5-5"
 }

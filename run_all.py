@@ -1,4 +1,4 @@
-"""Decide every purchase request, in date order, with the Policy agent.
+"""Decide every purchase request, in date order, with the three agents.
 
 Requests that already have a record in runs/ are skipped, so a run that
 stopped partway can be resumed by running the same command again.
@@ -17,7 +17,7 @@ from anthropic import AsyncAnthropic
 from dotenv import load_dotenv
 
 from agents.meko_client import connect
-from agents.policy_agent import decide
+from agents.workflow import decide
 from run_one import AGENT_ID, ROOT, require
 
 

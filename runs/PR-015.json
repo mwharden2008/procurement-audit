@@ -1,6 +1,6 @@
 {
   "request_id": "PR-015",
-  "conversation_id": "bcf58d5a95654142b25fb6a152484574",
+  "conversation_id": "68748fd1572c458b9d21fc7ebe572f20",
   "decision": {
     "decision": "REJECT",
     "rules": [
@@ -11,7 +11,7 @@
     "facts_used": [
       "R3: $13,200.00 is more than the department's remaining budget of $12,000.00."
     ],
-    "explanation": "Request PR-015 is rejected because the $13,200 cost is more than HR's remaining Q4 2026 budget of $12,000. The requester can fix this by reducing the amount, moving the purchase to a budget with enough funds, or resubmitting in a later quarter. All other checks passed: the vendor is approved, the manager signed off, and three quotes are attached.",
+    "explanation": "This request is rejected. $13,200.00 is more than the department's remaining budget of $12,000.00.",
     "rule_checks": [
       {
         "rule": "R1",
@@ -46,7 +46,7 @@
       {
         "rule": "R6",
         "applies": false,
-        "evidence": "The request is for thirty ergonomic office chairs, which is not gift cards, alcohol, or personal-use items.",
+        "evidence": "The request is for thirty ergonomic office chairs for HR, which is not gift cards, alcohol, or personal-use items.",
         "decided_by": "model"
       },
       {
@@ -76,7 +76,7 @@
       {
         "rule": "E5",
         "applies": false,
-        "evidence": "No conflict of interest is declared by the requester.",
+        "evidence": "The requester has not declared any conflict of interest.",
         "decided_by": "model"
       },
       {
@@ -110,6 +110,35 @@
       "earlier_requests_same_requester_and_vendor_within_7_days": []
     }
   },
+  "steps": [
+    {
+      "step": 1,
+      "agent_role": "intake",
+      "message_id": "cffff1e69c5287c25f78c93bbdfdae06",
+      "status": "accepted",
+      "summary": "Intake extracted the request fields. Every required field is filled in.",
+      "missing_required_fields": []
+    },
+    {
+      "step": 2,
+      "agent_role": "policy",
+      "message_id": "e4ff38d7000d1fe6d26f83ee2ae8208c",
+      "rules_that_apply": [
+        "R3"
+      ],
+      "model_overruled_on": []
+    },
+    {
+      "step": 3,
+      "agent_role": "approver",
+      "message_id": "3c816ebe33aa999fb46f345aba5f4145",
+      "decision": "REJECT",
+      "rules": [
+        "R3"
+      ],
+      "reviewers": []
+    }
+  ],
   "retrieval": [
     {
       "query": "required information a purchase request must include",
@@ -174,10 +203,10 @@
     }
   ],
   "memories": [],
-  "memories_searched": 98,
+  "memories_searched": 195,
   "tokens": {
     "input": 4970,
-    "output": 778
+    "output": 752
   },
   "model": "claude-haiku-5-5"
 }

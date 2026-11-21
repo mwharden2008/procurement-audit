@@ -1,6 +1,6 @@
 {
   "request_id": "PR-006",
-  "conversation_id": "b7a28ff0e88641619caf7aa1fccbc956",
+  "conversation_id": "370b67362f574f7a8a27a2756375582e",
   "decision": {
     "decision": "REJECT",
     "rules": [
@@ -11,7 +11,7 @@
     "facts_used": [
       "R5: $14,500.00 is $10,000 or more with 1 quote(s) attached and no sole-source justification."
     ],
-    "explanation": "Request PR-006 is rejected because it is for $14,500 but includes only one price quote, and purchases of $10,000 or more need at least three quotes. The vendor is approved, the Operations budget covers the amount, and the manager sign-off is recorded. To proceed, the requester can obtain two more quotes or attach a sole-source justification and resubmit.",
+    "explanation": "This request is rejected. $14,500.00 is $10,000 or more with 1 quote(s) attached and no sole-source justification.",
     "rule_checks": [
       {
         "rule": "R1",
@@ -46,7 +46,7 @@
       {
         "rule": "R6",
         "applies": false,
-        "evidence": "The request is for corrugated shipping boxes, not gift cards, alcohol, or personal-use items.",
+        "evidence": "The request is for corrugated shipping boxes for business use, not gift cards, alcohol, or personal items.",
         "decided_by": "model"
       },
       {
@@ -110,6 +110,35 @@
       "earlier_requests_same_requester_and_vendor_within_7_days": []
     }
   },
+  "steps": [
+    {
+      "step": 1,
+      "agent_role": "intake",
+      "message_id": "33ada9eb22a7bd24e53fe27827f10e9e",
+      "status": "accepted",
+      "summary": "Intake extracted the request fields. Every required field is filled in.",
+      "missing_required_fields": []
+    },
+    {
+      "step": 2,
+      "agent_role": "policy",
+      "message_id": "1f75a113f3d29bc7bdc82d2696097139",
+      "rules_that_apply": [
+        "R5"
+      ],
+      "model_overruled_on": []
+    },
+    {
+      "step": 3,
+      "agent_role": "approver",
+      "message_id": "0ecfccefcc5e82fe78dd8891d157897e",
+      "decision": "REJECT",
+      "rules": [
+        "R5"
+      ],
+      "reviewers": []
+    }
+  ],
   "retrieval": [
     {
       "query": "required information a purchase request must include",
@@ -175,10 +204,10 @@
     }
   ],
   "memories": [],
-  "memories_searched": 89,
+  "memories_searched": 169,
   "tokens": {
     "input": 5053,
-    "output": 784
+    "output": 721
   },
   "model": "claude-haiku-5-5"
 }

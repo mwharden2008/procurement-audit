@@ -1,4 +1,4 @@
-"""Decide one purchase request with the Policy agent.
+"""Decide one purchase request with the Intake, Policy and Approver agents.
 
 Usage:  python run_one.py PR-004
 """
@@ -13,7 +13,7 @@ from anthropic import AsyncAnthropic
 from dotenv import load_dotenv
 
 from agents.meko_client import connect
-from agents.policy_agent import decide
+from agents.workflow import decide
 
 ROOT = Path(__file__).resolve().parent
 AGENT_ID = "procurement_audit"

@@ -1,7 +1,8 @@
-"""Offline test of the Policy agent's flow, with Meko and the model faked.
+"""Offline tests of the three-agent flow, with Meko and the model faked.
 
-Checks that one decision makes the expected Meko calls in order and that the
-record it returns is complete. It makes no network calls and needs no keys.
+Checks that one decision passes through the Intake, Policy and Approver agents,
+that each records its own step in the same Meko conversation, and that the
+record returned is complete. It makes no network calls and needs no keys.
 
 Run from the repository root:  python -m pytest tests/test_policy_agent_offline.py
 """
@@ -11,15 +12,23 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 
-from agents.facts import code_checks, compute_facts
-from agents.policy_agent import RULE_IDS, decide, knowledge_queries, resolve
+import pytest
+
+from agents.facts import IncompleteReferenceData, code_checks, compute_facts, vendor_list
+from agents.intake_agent import IntakeError, extract
+from agents.policy_agent import knowledge_queries
+from agents.rules import RULE_IDS, resolve
+from agents.workflow import decide
 
 ROOT = Path(__file__).resolve().parent.parent
+REFERENCE_TEXT = (ROOT / "data/reference_data.json").read_text(encoding="utf-8")
 
 
 class FakeMeko:
-    def __init__(self):
+    def __init__(self, reference_text=None):
         self.calls = []
+        self.messages = []
+        self.reference_text = reference_text or REFERENCE_TEXT
 
     async def start_conversation(self, title, metadata=None):
         self.calls.append("start_conversation")
@@ -27,8 +36,7 @@ class FakeMeko:
 
     async def search_knowledge(self, conversation_id, query, limit=4):
         self.calls.append("search_knowledge")
-        reference = (ROOT / "data/reference_data.json").read_text(encoding="utf-8")
-        return [{"id": "ref-1", "chunk_text": reference},
+        return [{"id": "ref-1", "chunk_text": self.reference_text},
                 {"id": f"chunk-{len(query) % 3}", "chunk_text": f"text for {query}"}]
 
     async def search_memory(self, conversation_id, query, limit=100):
@@ -43,8 +51,9 @@ class FakeMeko:
 
     async def add_message(self, conversation_id, input_text, output_text, **kwargs):
         self.calls.append("add_message")
-        self.message = {"input": input_text, "output": output_text, **kwargs}
-        return {"message_id": "msg-1"}
+        self.messages.append({"conversation_id": conversation_id, "input": input_text,
+                              "output": output_text, **kwargs})
+        return {"message_id": f"msg-{len(self.messages)}"}
 
     async def track_tokens(self, conversation_id, model, input_tokens, output_tokens, message_id=None):
         self.calls.append("track_tokens")
@@ -53,6 +62,7 @@ class FakeMeko:
     async def add_memory(self, conversation_id, text, metadata=None):
         self.calls.append("add_memory")
         self.memory = text
+        self.memory_metadata = metadata
 
 
 class FakeModel:
@@ -93,17 +103,73 @@ def test_decision_flow_records_a_full_trace():
 
     lookups = len(knowledge_queries(request))
     assert meko.calls == (
-        ["start_conversation"] + ["search_knowledge"] * lookups
-        + ["search_memory", "add_message", "track_tokens", "add_memory"]
+        ["start_conversation", "add_message"]                      # Intake
+        + ["search_knowledge"] * lookups
+        + ["search_memory", "add_message", "track_tokens"]         # Policy
+        + ["add_message", "add_memory"]                            # Approver
     )
     decision = record["decision"]
     assert (decision["decision"], decision["rules"]) == ("REJECT", ["R2"])
     assert len(decision["rule_checks"]) == 12
     assert record["conversation_id"] == "conv-1"
     assert len(record["retrieval"]) == lookups
-    assert meko.tokens == (1200, 150, "msg-1")
+    assert meko.tokens == (1200, 150, "msg-2")  # tracked against the Policy step
     assert "PR-004" in meko.memory and "REJECT (R2)" in meko.memory
-    assert json.loads(meko.message["output"]) == decision
+    assert meko.memory_metadata["recorded_by"] == "approver"
+    assert json.loads(meko.messages[-1]["output"]) == decision
+
+
+def test_each_agent_records_its_own_step_in_one_conversation():
+    request = load_request("PR-004")
+    meko, model = FakeMeko(), FakeModel(findings({"R2"}))
+
+    record = asyncio.run(decide(request, meko, model, "test-model"))
+
+    roles = [(m["metadata"]["agent_role"], m["metadata"]["step"]) for m in meko.messages]
+    assert roles == [("intake", 1), ("policy", 2), ("approver", 3)]
+    assert {m["conversation_id"] for m in meko.messages} == {"conv-1"}
+    assert all(m["metadata"]["request_id"] == "PR-004" for m in meko.messages)
+    assert [s["agent_role"] for s in record["steps"]] == ["intake", "policy", "approver"]
+    assert [s["message_id"] for s in record["steps"]] == ["msg-1", "msg-2", "msg-3"]
+
+    intake, policy, approver = (json.loads(m["output"]) for m in meko.messages)
+    assert intake["status"] == "accepted" and intake["fields"]["request_id"] == "PR-004"
+    assert len(policy["rule_checks"]) == 12 and "decision" not in policy
+    assert approver["decision"] == "REJECT"
+    assert meko.messages[2]["metadata"]["reviewers"] == []
+
+
+def test_intake_lists_blank_required_fields_and_lets_policy_rule_on_them():
+    request = load_request("PR-019")
+    meko, model = FakeMeko(), FakeModel(findings({"R1"}, tier="T1"))
+
+    record = asyncio.run(decide(request, meko, model, "test-model"))
+
+    assert record["steps"][0]["missing_required_fields"] == ["justification"]
+    assert meko.messages[0]["metadata"]["missing_required_fields"] == ["justification"]
+    assert (record["decision"]["decision"], record["decision"]["rules"]) == ("REJECT", ["R1"])
+
+
+def test_intake_extracts_and_normalises_fields():
+    raw = {**load_request("PR-002"), "vendor": "  Ironclad Pallet & Rack ",
+           "amount_usd": "7800", "quotes_attached": None}
+    fields, problems = extract(raw)
+    assert problems == []
+    assert fields["vendor"] == "Ironclad Pallet & Rack"
+    assert fields["amount_usd"] == 7800.0
+    assert fields["quotes_attached"] == 0
+
+
+def test_intake_stops_a_request_it_cannot_read_and_records_why():
+    request = {**load_request("PR-002"), "amount_usd": "about eight thousand"}
+    meko, model = FakeMeko(), FakeModel(findings(set()))
+
+    with pytest.raises(IntakeError):
+        asyncio.run(decide(request, meko, model, "test-model"))
+
+    assert meko.calls == ["start_conversation", "add_message"]
+    assert meko.messages[0]["metadata"]["status"] == "invalid"
+    assert not hasattr(model, "request")  # the Policy model was never called
 
 
 def test_model_sees_request_knowledge_and_memories():
@@ -122,6 +188,8 @@ def test_model_sees_request_knowledge_and_memories():
     assert facts["combined_tier_is_higher_than_each_request_alone"] is True
     assert model.request["tool_choice"] == {"type": "tool", "name": "record_decision"}
     assert record["decision"]["reviewers"] == ["Procurement Manager"]
+    assert record["decision"]["explanation"].startswith(
+        "This request is not rejected, but it must be reviewed by the Procurement Manager")
 
 
 def test_only_rules_marked_as_applying_are_cited():
@@ -220,6 +288,77 @@ def test_later_and_unrelated_memories_are_ignored():
     assert facts["earlier_requests_same_requester_and_vendor_within_7_days"] == []
 
 
-def test_unknown_vendor_is_reported_as_not_found():
-    facts = compute_facts(load_request("PR-005"), reference_chunks(), [])
-    assert facts["vendor_status"].startswith("vendor not found among the 10 vendors")
+def split_like_meko(text):
+    """The vendor list split in two overlapping chunks, as Meko indexes it."""
+    first = text[:text.index('{"vendor_id": "V-006"')]
+    second = text[text.index('{"vendor_id": "V-005"'):]
+    return first, second
+
+
+def test_unknown_vendor_on_a_complete_list_is_rejected_by_code_check():
+    """Complete list retrieved: code settles R2, even if the model says otherwise."""
+    first, second = split_like_meko(REFERENCE_TEXT)
+    for chunks in ([{"id": "ref-1", "chunk_text": REFERENCE_TEXT}],
+                   [{"id": "b", "chunk_text": second}, {"id": "a", "chunk_text": first}]):
+        facts = compute_facts(load_request("PR-005"), chunks, [])
+        assert facts["vendor_list_complete"] is True
+        assert facts["vendor_status"] == "not on the list"
+        assert facts["vendor_list_vendor_count"] == 10
+        verdicts = code_checks(facts)
+        assert verdicts["R2"]["applies"] is True and verdicts["E3"]["applies"] is False
+
+    # The live PR-005 failure: the model marked R2 as not applying.
+    decision = resolve(findings(set()), verdicts)
+    assert (decision["decision"], decision["rules"]) == ("REJECT", ["R2"])
+    assert [o["rule"] for o in decision["model_overruled_by_code_checks"]] == ["R2"]
+    assert decision["explanation"].startswith("This request is rejected.")
+
+
+def test_unknown_vendor_on_an_incomplete_list_fails_without_a_decision():
+    """Only part of the list retrieved: no decision, no model call, a clear error."""
+    first, _ = split_like_meko(REFERENCE_TEXT)
+    meko, model = FakeMeko(reference_text=first), FakeModel(findings(set()))
+
+    with pytest.raises(IncompleteReferenceData, match="No decision was made"):
+        asyncio.run(decide(load_request("PR-005"), meko, model, "test-model"))
+
+    assert not hasattr(model, "request")          # the model was never asked
+    assert "add_memory" not in meko.calls          # nothing remembered
+    assert meko.calls[-1] == "add_message"         # the failed Policy step is in the trace
+    failed = meko.messages[-1]["metadata"]
+    assert (failed["agent_role"], failed["status"]) == ("policy", "failed")
+    assert [m["metadata"]["agent_role"] for m in meko.messages] == ["intake", "policy"]
+
+
+def test_vendor_list_with_a_gap_or_no_start_is_incomplete():
+    first, second = split_like_meko(REFERENCE_TEXT)
+    gap_first = first[:first.index('{"vendor_id": "V-004"')]   # V-001 to V-003
+    assert vendor_list([{"id": "a", "chunk_text": gap_first},
+                        {"id": "b", "chunk_text": second}])["complete"] is False
+    assert vendor_list([{"id": "b", "chunk_text": second}])["complete"] is False
+    assert vendor_list([{"id": "a", "chunk_text": first}])["complete"] is False
+
+
+def test_a_vendor_found_on_part_of_the_list_is_still_decided():
+    """Completeness matters only when the vendor was not found."""
+    _, second = split_like_meko(REFERENCE_TEXT)
+    facts = compute_facts(load_request("PR-009"), [{"id": "b", "chunk_text": second}], [])
+    assert facts["vendor_status"] == "probation"
+    assert "vendor_list_complete" not in facts
+
+
+def test_explanation_always_matches_the_final_decision():
+    """The Approver writes the explanation from the decision, not the model's draft."""
+    contradicting = "This request is rejected because the vendor is not approved."
+    approve = resolve(findings(set(), explanation=contradicting))
+    assert approve["decision"] == "APPROVE"
+    assert approve["explanation"].startswith("This request is approved.")
+    assert "rejected" not in approve["explanation"]
+
+    reject = resolve(findings({"R6"}, explanation="This request is approved."))
+    assert reject["explanation"] == "This request is rejected. evidence for R6."
+
+    escalate = resolve(findings({"E1", "E4"}, explanation="Approved."))
+    assert escalate["explanation"].startswith(
+        "This request is not rejected, but it must be reviewed by the Finance Director "
+        "and the IT Security team before it can go ahead.")

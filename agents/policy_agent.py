@@ -1,19 +1,30 @@
-"""Policy agent: decides one purchase request and records why.
+"""Policy agent: checks one purchase request against every rule.
 
-For each request the agent:
-  1. opens a Meko conversation, which becomes the trace for the decision;
-  2. retrieves the policy rules and reference data from Meko knowledge;
-  3. searches Meko memory for earlier requests by the same requester,
+It is the second of three agents. It works in the Meko conversation the
+Intake agent opened, on the fields Intake extracted. It:
+  1. retrieves the policy rules and reference data from Meko knowledge;
+  2. searches Meko memory for earlier requests by the same requester,
      and works out amounts, budget, vendor status and sums in code;
-  4. asks the model to check every rule, using only what was retrieved,
-     and works out the decision from those checks in code;
-  5. records the decision, its reasoning and token use in the trace;
-  6. stores a memory of the outcome for later decisions to find.
+  3. asks the model to check every rule, using only what was retrieved;
+  4. merges the model's checks with the code checks (code wins on a
+     disagreement, and the disagreement is kept);
+  5. records its rule checks and token use as its own step in the trace.
+
+If the vendor is not found and the whole Approved Vendor List was not
+retrieved, it records a failed step and stops, with no model call, so the
+request is never decided on partial data and can be retried.
+
+The Approver agent turns these checks into the final decision.
 """
 
 import json
 
-from agents.facts import code_checks, compute_facts
+from agents.facts import (IncompleteReferenceData, code_checks, compute_facts,
+                          require_complete_reference_data)
+from agents.intake_agent import message_id_of
+from agents.rules import RULE_IDS, combine_checks
+
+ROLE = "policy"
 
 SYSTEM_PROMPT = """You are the Policy agent for procurement at Harbor Ridge Distribution.
 
@@ -43,13 +54,6 @@ that applies means REJECT, otherwise any escalate rule that applies means
 ESCALATE, otherwise APPROVE. Write the explanation to match that outcome, for a
 reader outside Procurement: plain sentences, the facts that mattered, no
 jargon. Mention only rules that apply. Call record_decision exactly once."""
-
-RULE_IDS = ["R1", "R2", "R3", "R4", "R5", "R6", "E1", "E2", "E3", "E4", "E5", "E6"]
-REVIEWERS = {
-    "E1": "Finance Director", "E2": "Procurement Manager",
-    "E3": "Procurement Manager", "E4": "IT Security",
-    "E5": "Compliance Officer", "E6": "Procurement Manager",
-}
 
 DECISION_TOOL = {
     "name": "record_decision",
@@ -82,61 +86,6 @@ DECISION_TOOL = {
         "required": ["rule_checks", "tier", "explanation"],
     },
 }
-
-
-def resolve(findings, verified=None):
-    """Turn the model's rule checks into a decision, in the policy's order.
-
-    `verified` holds the code's verdicts for rules the computed facts settle.
-    Where the model disagrees with one, the code's verdict is used and the
-    disagreement is recorded, so an auditor can see both.
-    """
-    verified = verified or {}
-    model = {c["rule"]: c for c in findings["rule_checks"] if c["rule"] in RULE_IDS}
-    checks, overrides = {}, []
-    for rule in RULE_IDS:
-        if rule in verified:
-            said = model.get(rule, {}).get("applies")
-            if said is not None and said != verified[rule]["applies"]:
-                overrides.append({
-                    "rule": rule, "model_said": said, "code_check_says": verified[rule]["applies"],
-                    "model_evidence": model[rule]["evidence"], "reason": verified[rule]["reason"],
-                })
-            checks[rule] = {"rule": rule, "applies": verified[rule]["applies"],
-                            "evidence": verified[rule]["reason"], "decided_by": "code check"}
-        elif rule in model:
-            checks[rule] = {**model[rule], "decided_by": "model"}
-
-    applied = [rule for rule in RULE_IDS if checks.get(rule, {}).get("applies")]
-    reject = [rule for rule in applied if rule.startswith("R")]
-    escalate = [rule for rule in applied if rule.startswith("E")]
-    if reject:
-        decision, rules = "REJECT", reject
-    elif escalate:
-        decision, rules = "ESCALATE", escalate
-    else:
-        decision, rules = "APPROVE", []
-    reviewers = sorted({REVIEWERS[rule] for rule in rules if rule in REVIEWERS})
-
-    explanation = findings["explanation"]
-    if overrides:
-        # The model's wording may describe a verdict that was overruled, so
-        # the explanation is rebuilt from the evidence for the final rules.
-        outcome = {"REJECT": "This request is rejected.",
-                   "ESCALATE": f"This request is sent to {' and '.join(reviewers)} for review.",
-                   "APPROVE": "This request is approved. No reject or escalate rule applies."}[decision]
-        explanation = " ".join([outcome] + [checks[rule]["evidence"] for rule in rules])
-    return {
-        "decision": decision,
-        "rules": rules,
-        "reviewers": reviewers,
-        "tier": findings["tier"],
-        "facts_used": [f"{rule}: {checks[rule]['evidence']}" for rule in rules],
-        "explanation": explanation,
-        "rule_checks": [checks[rule] for rule in RULE_IDS if rule in checks],
-        "rules_not_checked": [rule for rule in RULE_IDS if rule not in checks],
-        "model_overruled_by_code_checks": overrides,
-    }
 
 
 def knowledge_queries(request):
@@ -177,13 +126,12 @@ def build_user_message(request, chunks, memories, facts, verified):
     return "\n".join(parts)
 
 
-async def decide(request, meko, llm, model):
-    """Decide one request and write its trace to Meko. Returns a record dict."""
+async def run(request, meko, llm, model, conversation_id):
+    """Check every rule for one request and record the Policy step.
+
+    `request` holds the fields the Intake agent extracted.
+    """
     request_id = request["request_id"]
-    conversation_id = await meko.start_conversation(
-        title=f"{request_id}: {request.get('item', '')[:60]}",
-        metadata={"request_id": request_id, "agent_role": "policy"},
-    )
 
     # Retrieve knowledge. Keep each chunk once and note which lookup found it.
     chunks, retrieval_log = {}, []
@@ -199,6 +147,19 @@ async def decide(request, meko, llm, model):
 
     # Arithmetic and lookups are done in code and recorded with their sources.
     facts = compute_facts(request, chunk_list, memories)
+    try:
+        require_complete_reference_data(facts)
+    except IncompleteReferenceData as error:
+        await meko.add_message(
+            conversation_id,
+            input_text=json.dumps(request),
+            output_text=json.dumps({"status": "failed", "error": str(error),
+                                    "computed_facts": facts}),
+            reasoning=str(error),
+            metadata={"agent_role": ROLE, "step": 2, "request_id": request_id,
+                      "status": "failed", "knowledge_chunk_ids": list(chunks)},
+        )
+        raise
     verified = code_checks(facts)
     related_ids = {r["memory_id"] for r in
                    facts.get("earlier_requests_same_requester_and_vendor_within_7_days", [])}
@@ -214,36 +175,42 @@ async def decide(request, meko, llm, model):
         messages=[{"role": "user", "content": user_message}],
     )
     findings = next(b.input for b in response.content if b.type == "tool_use")
-    decision = resolve(findings, verified)
-    decision["tier"] = facts.get("tier", decision["tier"])
-    decision["computed_facts"] = facts
+    checks, overrides = combine_checks(findings, verified)
+    result = {
+        "rule_checks": checks,
+        "model_overruled_by_code_checks": overrides,
+        "model_draft_explanation": findings["explanation"],
+        "tier": facts.get("tier", findings["tier"]),
+        "computed_facts": facts,
+    }
 
+    applying = [rule for rule in RULE_IDS if checks.get(rule, {}).get("applies")]
     message = await meko.add_message(
         conversation_id,
         input_text=json.dumps(request),
-        output_text=json.dumps(decision),
-        reasoning=decision["explanation"],
+        output_text=json.dumps({**result, "rule_checks": list(checks.values())}),
+        reasoning=(f"Rules that apply: {', '.join(applying) or 'none'}. "
+                   f"Rules where a code check overruled the model: "
+                   f"{', '.join(o['rule'] for o in overrides) or 'none'}."),
         plan=[
             "Retrieve the policy rules and reference data from Meko knowledge.",
             "Search Meko memory for earlier requests by this requester to this vendor.",
             "Work out amounts, budget, vendor status and split-purchase sums in code.",
-            "Check every rule, then apply reject rules before escalate rules.",
+            "Check every rule, R1 to R6 and E1 to E6, and pass the checks to the Approver.",
         ],
         metadata={
-            "agent_role": "policy",
+            "agent_role": ROLE,
+            "step": 2,
             "request_id": request_id,
-            "decision": decision["decision"],
-            "rules": decision["rules"],
+            "rules_that_apply": applying,
             "knowledge_chunk_ids": list(chunks),
             "memories_searched": len(memories),
             "memories_used": sorted(related_ids),
-            "model_overruled_on": [o["rule"] for o in decision["model_overruled_by_code_checks"]],
+            "model_overruled_on": [o["rule"] for o in overrides],
             "model": model,
         },
     )
-    message_id = None
-    if isinstance(message, dict):
-        message_id = message.get("message_id") or message.get("id")
+    message_id = message_id_of(message)
 
     await meko.track_tokens(
         conversation_id, model,
@@ -251,35 +218,12 @@ async def decide(request, meko, llm, model):
         message_id=message_id,
     )
 
-    rules = ", ".join(decision["rules"]) or "no rules cited"
-    await meko.add_memory(
-        conversation_id,
-        text=(
-            f"Purchase request {request_id} dated {request.get('request_date')}: "
-            f"{request.get('requester')} ({request.get('department')}) requested "
-            f"${request.get('amount_usd', 0):,.2f} from {request.get('vendor')} for "
-            f"{request.get('item')}. Decision: {decision['decision']} ({rules})."
-        ),
-        metadata={
-            "request_id": request_id,
-            "decision": decision["decision"],
-            "requester": request.get("requester"),
-            "vendor": request.get("vendor"),
-            "amount_usd": request.get("amount_usd"),
-            "request_date": request.get("request_date"),
-        },
-    )
-
-    return {
-        "request_id": request_id,
-        "conversation_id": conversation_id,
-        "decision": decision,
+    result.update({
+        "message_id": message_id,
         "retrieval": retrieval_log,
         "memories": [memory_text(m) for m in relevant_memories],
         "memories_searched": len(memories),
-        "tokens": {
-            "input": response.usage.input_tokens,
-            "output": response.usage.output_tokens,
-        },
+        "tokens": {"input": response.usage.input_tokens, "output": response.usage.output_tokens},
         "model": model,
-    }
+    })
+    return result

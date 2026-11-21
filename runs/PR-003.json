@@ -1,13 +1,13 @@
 {
   "request_id": "PR-003",
-  "conversation_id": "396451eaa9ba499d898a8c4628110dac",
+  "conversation_id": "a1472a9aec114574a27d17073e77b38f",
   "decision": {
     "decision": "APPROVE",
     "rules": [],
     "reviewers": [],
     "tier": "T2",
     "facts_used": [],
-    "explanation": "Request PR-003 for four Corvid C14 laptops ($5,600) meets every policy check. The vendor is approved, the IT department has enough remaining budget, the manager has signed off, and the laptop is on the pre-approved IT list. No other rule was triggered, so the purchase can proceed.",
+    "explanation": "This request is approved. It meets every rule in the procurement policy. The vendor is on the Approved Vendor List with status 'approved'. $5,600.00 is within the department's remaining budget of $80,000.00. $5,600.00 is $1,000 or more and a manager sign-off is recorded.",
     "rule_checks": [
       {
         "rule": "R1",
@@ -42,7 +42,7 @@
       {
         "rule": "R6",
         "applies": false,
-        "evidence": "Request is for laptops for new hires, not gift cards, alcohol, or personal use.",
+        "evidence": "The request is for laptops for new hires, which is not gift cards, alcohol, or personal use.",
         "decided_by": "model"
       },
       {
@@ -113,6 +113,31 @@
       "earlier_requests_same_requester_and_vendor_within_7_days": []
     }
   },
+  "steps": [
+    {
+      "step": 1,
+      "agent_role": "intake",
+      "message_id": "990be738fc7d6ab18f4ceb938e5e2314",
+      "status": "accepted",
+      "summary": "Intake extracted the request fields. Every required field is filled in.",
+      "missing_required_fields": []
+    },
+    {
+      "step": 2,
+      "agent_role": "policy",
+      "message_id": "a302287fd0fc297c3fdfcc5988d97cb2",
+      "rules_that_apply": [],
+      "model_overruled_on": []
+    },
+    {
+      "step": 3,
+      "agent_role": "approver",
+      "message_id": "767d8e5ae35c183a638cde0391dee297",
+      "decision": "APPROVE",
+      "rules": [],
+      "reviewers": []
+    }
+  ],
   "retrieval": [
     {
       "query": "required information a purchase request must include",
@@ -189,10 +214,10 @@
     }
   ],
   "memories": [],
-  "memories_searched": 81,
+  "memories_searched": 160,
   "tokens": {
     "input": 5584,
-    "output": 783
+    "output": 795
   },
   "model": "claude-haiku-5-5"
 }

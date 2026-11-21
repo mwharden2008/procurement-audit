@@ -1,6 +1,6 @@
 {
   "request_id": "PR-017",
-  "conversation_id": "9696a2f53d984178aa37dbe685b90184",
+  "conversation_id": "c26fcf15c97b48f49f1ebf8c8668b351",
   "decision": {
     "decision": "REJECT",
     "rules": [
@@ -9,9 +9,9 @@
     "reviewers": [],
     "tier": "T1",
     "facts_used": [
-      "R6: The item is twenty $25 gift cards, and the category is 'gift_cards', which is a prohibited item under the policy."
+      "R6: The request is for twenty $25 gift cards, which is a prohibited item (category: gift_cards)."
     ],
-    "explanation": "PR-017 is rejected because it asks for gift cards, which the policy prohibits. The request cannot proceed as submitted, but the requester may resubmit with a different item. All other checks passed: the vendor is approved, the department has enough budget, and the amount is low.",
+    "explanation": "This request is rejected. The request is for twenty $25 gift cards, which is a prohibited item (category: gift_cards).",
     "rule_checks": [
       {
         "rule": "R1",
@@ -46,7 +46,7 @@
       {
         "rule": "R6",
         "applies": true,
-        "evidence": "The item is twenty $25 gift cards, and the category is 'gift_cards', which is a prohibited item under the policy.",
+        "evidence": "The request is for twenty $25 gift cards, which is a prohibited item (category: gift_cards).",
         "decided_by": "model"
       },
       {
@@ -76,7 +76,7 @@
       {
         "rule": "E5",
         "applies": false,
-        "evidence": "The request declares no conflict of interest.",
+        "evidence": "Conflict of interest declared is false.",
         "decided_by": "model"
       },
       {
@@ -113,7 +113,7 @@
           "request_date": "2026-11-12",
           "amount_usd": 13200.0,
           "days_before": 1,
-          "memory_id": "89a1a42c-da12-4606-9460-63c0b05c7028"
+          "memory_id": "cc800f74-e414-4c29-b161-9a71bb27f2ac"
         }
       ],
       "combined_amount_usd": 13700.0,
@@ -122,6 +122,35 @@
       "combined_tier_is_higher_than_each_request_alone": false
     }
   },
+  "steps": [
+    {
+      "step": 1,
+      "agent_role": "intake",
+      "message_id": "a06850299c4dd8f308dd5271e781fcb4",
+      "status": "accepted",
+      "summary": "Intake extracted the request fields. Every required field is filled in.",
+      "missing_required_fields": []
+    },
+    {
+      "step": 2,
+      "agent_role": "policy",
+      "message_id": "b63987f55b66f85949f42c2ec85706f5",
+      "rules_that_apply": [
+        "R6"
+      ],
+      "model_overruled_on": []
+    },
+    {
+      "step": 3,
+      "agent_role": "approver",
+      "message_id": "5278fa9251a021dfa02a367c74e46408",
+      "decision": "REJECT",
+      "rules": [
+        "R6"
+      ],
+      "reviewers": []
+    }
+  ],
   "retrieval": [
     {
       "query": "required information a purchase request must include",
@@ -188,10 +217,10 @@
   "memories": [
     "Purchase request PR-015 dated 2026-11-12: Priya Nair (HR) requested $13,200.00 from Summit Office Supply for Thirty ergonomic office chairs. Decision: REJECT (R3)."
   ],
-  "memories_searched": 100,
+  "memories_searched": 198,
   "tokens": {
-    "input": 5201,
-    "output": 735
+    "input": 5203,
+    "output": 769
   },
   "model": "claude-haiku-5-5"
 }
