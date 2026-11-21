@@ -362,3 +362,77 @@ def test_explanation_always_matches_the_final_decision():
     assert escalate["explanation"].startswith(
         "This request is not rejected, but it must be reviewed by the Finance Director "
         "and the IT Security team before it can go ahead.")
+
+
+def without(text, start_marker, end_marker):
+    """The reference text with one block (from start_marker up to end_marker) cut out."""
+    return text[:text.index(start_marker)] + text[text.index(end_marker):]
+
+
+def assert_fails_before_the_model(request, reference_text, rule):
+    meko, model = FakeMeko(reference_text=reference_text), FakeModel(findings(set()))
+    with pytest.raises(IncompleteReferenceData, match=rf"No decision was made.*{rule}:"):
+        asyncio.run(decide(request, meko, model, "test-model"))
+    assert not hasattr(model, "request")          # the model never ruled on it
+    assert "add_memory" not in meko.calls
+    failed = meko.messages[-1]["metadata"]
+    assert (failed["agent_role"], failed["status"]) == ("policy", "failed")
+
+
+def test_missing_budget_table_fails_the_request():
+    no_budgets = without(REFERENCE_TEXT, '"department_budgets_remaining_usd"', '"approved_vendor_list"')
+    facts = compute_facts(load_request("PR-001"), [{"id": "r", "chunk_text": no_budgets}], [])
+    assert facts["department_budget_missing"] == "the department budget table was not retrieved"
+    assert "R3" not in code_checks(facts)
+    assert_fails_before_the_model(load_request("PR-001"), no_budgets, "R3")
+
+
+def test_department_missing_from_the_budget_table_fails_the_request():
+    request = {**load_request("PR-001"), "department": "Legal"}
+    facts = compute_facts(request, reference_chunks(), [])
+    assert "has no entry for 'Legal'" in facts["department_budget_missing"]
+    assert_fails_before_the_model(request, REFERENCE_TEXT, "R3")
+
+
+def test_blank_department_does_not_need_the_budget():
+    """R1 rejects a request with no department, so the budget is not needed."""
+    request = {**load_request("PR-001"), "department": ""}
+    facts = compute_facts(request, reference_chunks(), [])
+    assert "department_budget_missing" not in facts
+    assert code_checks(facts)["R1"]["applies"] is True
+
+
+def test_named_item_missing_from_a_partial_catalog_fails_the_request():
+    # Keep only the first catalog entry, as one chunk can hold.
+    first_item = REFERENCE_TEXT.index('{"item": "Corvid 27-inch monitor"')
+    partial_catalog = REFERENCE_TEXT[:first_item]
+    request = {**load_request("PR-011"), "catalog_item": "Corvid 34-inch curved monitor"}
+    facts = compute_facts(request, [{"id": "r", "chunk_text": partial_catalog}], [])
+    assert facts["it_catalog_complete"] is False
+    assert "E4" not in code_checks(facts)
+    assert_fails_before_the_model(request, partial_catalog, "E4")
+
+
+def test_named_item_missing_from_a_complete_catalog_is_escalated_by_code():
+    request = {**load_request("PR-011"), "catalog_item": "Corvid 34-inch curved monitor"}
+    facts = compute_facts(request, reference_chunks(), [])
+    assert facts["it_catalog_complete"] is True
+    assert code_checks(facts)["E4"]["applies"] is True
+
+
+def test_catalog_item_found_or_not_named_needs_no_complete_catalog():
+    partial = REFERENCE_TEXT[:REFERENCE_TEXT.index('{"item": "Corvid 27-inch monitor"')]
+    chunks = [{"id": "r", "chunk_text": partial}]
+    found = compute_facts(load_request("PR-003"), chunks, [])        # Corvid C14, first entry
+    assert "it_catalog_complete" not in found
+    assert code_checks(found)["E4"]["applies"] is False
+    unnamed = compute_facts(load_request("PR-011"), [{"id": "r", "chunk_text": "no data"}], [])
+    assert unnamed["catalog_item_named"] is False
+    assert code_checks(unnamed)["E4"]["applies"] is True
+
+
+def test_non_it_request_does_not_need_the_catalog():
+    facts = compute_facts(load_request("PR-001"), [{"id": "r", "chunk_text": without(
+        REFERENCE_TEXT, '"pre_approved_it_catalog"', '"prohibited_categories"')}], [])
+    assert "it_catalog_complete" not in facts
+    assert code_checks(facts)["E4"]["applies"] is False

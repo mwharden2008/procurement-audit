@@ -38,43 +38,50 @@ def find_in_chunks(pattern, chunks):
     return None, None
 
 
-VENDOR_LIST_START = re.compile(r'"approved_vendor_list":\s*\[')
-VENDOR_ENTRY = re.compile(r'\{"vendor_id":\s*"[^"]+"[^{}]*\}')
+VENDOR_LIST = {"start": re.compile(r'"approved_vendor_list":\s*\['),
+               "entry": re.compile(r'\{"vendor_id":\s*"[^"]+"[^{}]*\}'),
+               "name": "Approved Vendor List", "marker": '{"vendor_id"', "fields": ("vendor_id", "name", "status")}
+IT_CATALOG = {"start": re.compile(r'"pre_approved_it_catalog":\s*\['),
+              "entry": re.compile(r'\{"item":\s*"[^"]+"[^{}]*\}'),
+              "name": "Pre-Approved IT Catalog", "marker": '{"item"', "fields": ("item", "vendor")}
+BUDGET_TABLE = re.compile(r'"department_budgets_remaining_usd":\s*\{([^{}]*)\}')
 
 
 class IncompleteReferenceData(RuntimeError):
     """The retrieved reference data is not complete enough to decide the request."""
 
 
-def _vendor_list_piece(chunk):
-    """The part of the Approved Vendor List one chunk holds, or None."""
+def _list_piece(chunk, spec):
+    """The part of one reference-data list that one chunk holds, or None."""
     text = chunk.get("chunk_text", "")
-    start = VENDOR_LIST_START.search(text)
+    start = spec["start"].search(text)
     body = text[start.end():] if start else text
-    matches = list(VENDOR_ENTRY.finditer(body))
+    matches = list(spec["entry"].finditer(body))
     if not matches and not start:
         return None
     rest = body[matches[-1].end():] if matches else body
     closes = bool(matches) and rest.lstrip(" \t\r\n,").startswith("]")
-    partial = "" if closes or '{"vendor_id"' not in rest else rest[rest.find('{"vendor_id"'):].strip()
+    marker = spec["marker"]
+    partial = "" if closes or marker not in rest else rest[rest.find(marker):].strip()
     return {"id": chunk.get("id"), "starts": bool(start), "closes": closes,
             "entries": [m.group(0) for m in matches], "partial": partial}
 
 
-def vendor_list(chunks):
-    """Reassemble the Approved Vendor List from the retrieved chunks.
+def reference_list(chunks, spec):
+    """Reassemble one list from the reference data out of the retrieved chunks.
 
-    Meko may split the list across chunks, so the pieces are joined end to end.
+    Meko may split a list across chunks, so the pieces are joined end to end.
     The list counts as complete only when the chunk that opens the list was
     retrieved, each following piece overlaps the one before it (so nothing in
     between can be missing), and the last piece closes the list. Nothing here
-    assumes how many vendors there are.
+    assumes how many entries there are.
     """
-    pieces = [p for p in (_vendor_list_piece(c) for c in chunks) if p]
+    name = spec["name"]
+    pieces = [p for p in (_list_piece(c, spec) for c in chunks) if p]
     start = next((p for p in pieces if p["starts"]), None)
     if start is None:
-        return {"complete": False, "vendors": [], "source_chunks": [],
-                "reason": "the start of the Approved Vendor List was not retrieved"}
+        return {"complete": False, "entries": [], "source_chunks": [],
+                "reason": f"the start of the {name} was not retrieved"}
 
     entries, partial, closed = list(start["entries"]), start["partial"], start["closes"]
     used = [start["id"]]
@@ -97,19 +104,27 @@ def vendor_list(chunks):
             used.append(piece["id"])
             break
         else:
-            return {"complete": False, "vendors": _parse(entries), "source_chunks": used,
-                    "reason": (f"the retrieved text holds the start of the Approved Vendor List "
-                               f"and {len(entries)} vendor(s), but not the rest of the list")}
-    return {"complete": True, "vendors": _parse(entries), "source_chunks": used,
-            "reason": "the whole Approved Vendor List was retrieved, from its start to its end"}
+            return {"complete": False, "entries": _parse(entries, spec), "source_chunks": used,
+                    "reason": (f"the retrieved text holds the start of the {name} and "
+                               f"{len(entries)} entries, but not the rest of the list")}
+    return {"complete": True, "entries": _parse(entries, spec), "source_chunks": used,
+            "reason": f"the whole {name} was retrieved, from its start to its end"}
 
 
-def _parse(entries):
-    vendors = []
+def vendor_list(chunks):
+    return reference_list(chunks, VENDOR_LIST)
+
+
+def catalog_list(chunks):
+    return reference_list(chunks, IT_CATALOG)
+
+
+def _parse(entries, spec):
+    parsed = []
     for entry in entries:
-        fields = dict(re.findall(r'"(vendor_id|name|status)":\s*"([^"]*)"', entry))
-        vendors.append({k: fields.get(k) for k in ("vendor_id", "name", "status")})
-    return vendors
+        fields = dict(re.findall(r'"(\w+)":\s*"([^"]*)"', entry))
+        parsed.append({k: fields.get(k) for k in spec["fields"]})
+    return parsed
 
 
 def related_requests(request, memories):
@@ -173,6 +188,13 @@ def compute_facts(request, chunks, memories):
     budget, source = find_in_chunks(rf'"{re.escape(department)}":\s*(\d+(?:\.\d+)?)', chunks)
     if budget is None:
         facts["department_budget"] = "not found in the retrieved reference data"
+        if not is_blank(department):
+            # R3 needs this figure. A blank department is rejected under R1 instead.
+            table = next((m for c in chunks
+                          for m in [BUDGET_TABLE.search(c.get("chunk_text", ""))] if m), None)
+            facts["department_budget_missing"] = (
+                f"the department budget table was retrieved but has no entry for '{department}'"
+                if table else "the department budget table was not retrieved")
     else:
         facts["department_budget_remaining_usd"] = float(budget)
         facts["amount_is_greater_than_remaining_budget"] = amount > float(budget)
@@ -191,7 +213,7 @@ def compute_facts(request, chunks, memories):
         facts["vendor_list_source_chunks"] = listing["source_chunks"]
         if listing["complete"]:
             facts["vendor_status"] = "not on the list"
-            facts["vendor_list_vendor_count"] = len(listing["vendors"])
+            facts["vendor_list_vendor_count"] = len(listing["entries"])
         else:
             facts["vendor_status"] = "unknown: not found in the part of the list that was retrieved"
 
@@ -202,11 +224,25 @@ def compute_facts(request, chunks, memories):
         catalog.update(item.strip() for item in re.findall(r'Item:\s*([^;\n]+);\s*Vendor:', text))
     facts["category_is_it_hardware_or_software"] = request.get("category") in IT_CATEGORIES
     if request.get("category") in IT_CATEGORIES:
-        if catalog:
-            facts["pre_approved_it_catalog_items_retrieved"] = sorted(catalog)
-            facts["item_is_in_pre_approved_it_catalog"] = request.get("catalog_item") in catalog
+        named = request.get("catalog_item")
+        facts["pre_approved_it_catalog_items_retrieved"] = sorted(catalog)
+        if is_blank(named):
+            # No catalog item is named, so nothing can match: the catalog is not needed.
+            facts["catalog_item_named"] = False
+            facts["item_is_in_pre_approved_it_catalog"] = False
+        elif named in catalog:
+            facts["catalog_item_named"] = True
+            facts["item_is_in_pre_approved_it_catalog"] = True
         else:
-            facts["pre_approved_it_catalog"] = "not found in the retrieved data"
+            # Absent from what was retrieved: it is only known to be absent
+            # from the catalog if the whole catalog was retrieved.
+            facts["catalog_item_named"] = True
+            listing = catalog_list(chunks)
+            facts["it_catalog_complete"] = listing["complete"]
+            facts["it_catalog_check"] = listing["reason"]
+            facts["it_catalog_source_chunks"] = listing["source_chunks"]
+            if listing["complete"]:
+                facts["item_is_in_pre_approved_it_catalog"] = False
 
     related = related_requests(request, memories)
     combined = amount + sum(r["amount_usd"] for r in related)
@@ -223,18 +259,34 @@ def compute_facts(request, chunks, memories):
     return facts
 
 
+def missing_reference_data(facts):
+    """What the request needs from the reference data but did not get."""
+    problems = []
+    if facts.get("vendor_list_complete") is False:
+        problems.append(f"R2: the vendor was not found and {facts['vendor_list_check']}, so it "
+                        f"is not known whether the vendor is on the Approved Vendor List.")
+    if "department_budget_missing" in facts:
+        problems.append(f"R3: {facts['department_budget_missing']}, so it is not known "
+                        f"whether the amount is within the department's budget.")
+    if facts.get("it_catalog_complete") is False:
+        problems.append(f"E4: the catalog item was not found and {facts['it_catalog_check']}, "
+                        f"so it is not known whether the item is in the Pre-Approved IT Catalog.")
+    return problems
+
+
 def require_complete_reference_data(facts):
     """Stop the decision when the facts rest on part of the reference data.
 
-    A vendor that is not in the retrieved part of the Approved Vendor List may
-    still be on the list, so no decision is made: the request fails and can be
-    retried, rather than being judged (or approved) on partial data.
+    Covers the vendor list (R2), the department budget (R3) and the IT catalog
+    (E4). When one is needed and was not retrieved in full, no decision is
+    made: the request fails and can be retried, rather than being judged (or
+    approved) on partial data, and the model never rules on those rules.
     """
-    if facts.get("vendor_list_complete") is False:
+    problems = missing_reference_data(facts)
+    if problems:
         raise IncompleteReferenceData(
-            f"The vendor was not found and {facts['vendor_list_check']}, so it is not known "
-            f"whether the vendor is on the Approved Vendor List. No decision was made; "
-            f"run the request again to retry the retrieval.")
+            "No decision was made because the reference data needed was not retrieved. "
+            + " ".join(problems) + " Run the request again to retry the retrieval.")
 
 
 def money(amount):
@@ -247,7 +299,10 @@ def code_checks(facts):
     Returns {rule: {"applies": bool, "reason": str}}. A rule is left out when
     the facts cannot settle it, and the model's judgement stands for that rule.
     R6 (prohibited item) and E5 (conflict of interest) are always left to the model.
-    A vendor missing from the list settles R2 only when the whole list was retrieved.
+    A vendor missing from the list settles R2, and a named item missing from the
+    IT catalog settles E4, only when the whole list was retrieved. When the
+    data R2, R3 or E4 needs is missing, require_complete_reference_data stops
+    the request before the model is asked.
     """
     checks = {}
 
@@ -310,6 +365,9 @@ def code_checks(facts):
 
     if not facts["category_is_it_hardware_or_software"]:
         settle("E4", False, "The category is not IT hardware or software.")
+    elif facts.get("catalog_item_named") is False:
+        settle("E4", True, "The category is IT hardware or software and no Pre-Approved IT "
+                           "Catalog item is named, so the item is not in the catalog.")
     elif "item_is_in_pre_approved_it_catalog" in facts:
         listed = facts["item_is_in_pre_approved_it_catalog"]
         settle("E4", not listed, f"The category is IT hardware or software and the item "

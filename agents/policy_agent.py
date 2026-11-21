@@ -10,9 +10,10 @@ Intake agent opened, on the fields Intake extracted. It:
      disagreement, and the disagreement is kept);
   5. records its rule checks and token use as its own step in the trace.
 
-If the vendor is not found and the whole Approved Vendor List was not
-retrieved, it records a failed step and stops, with no model call, so the
-request is never decided on partial data and can be retried.
+If the reference data a rule needs was not retrieved in full (the vendor
+list for R2, the department budget for R3, the IT catalog for E4), it
+records a failed step and stops, with no model call, so the request is never
+decided on partial data and can be retried.
 
 The Approver agent turns these checks into the final decision.
 """

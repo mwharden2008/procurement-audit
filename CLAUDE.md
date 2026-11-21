@@ -32,7 +32,7 @@ Distribution. All vendors, employees and requests are invented sample data.
 | `data/purchase_requests.json` | 19 sample requests, PR-001 to PR-019 |
 | `data/expected_decisions.json` | Answer key. Never give it to the agents or upload it to Meko. |
 | `tests/reference_solver.py` | Plain-Python solver that checks the answer key (19 of 19) |
-| `tests/test_policy_agent_offline.py` | Offline tests of the three-agent flow, Meko and the model faked (21 tests) |
+| `tests/test_policy_agent_offline.py` | Offline tests of the three-agent flow, Meko and the model faked (28 tests) |
 | `agents/meko_client.py` | MCP client for Meko (streamable HTTP, Bearer API key, `mcp` 2.x) |
 | `agents/workflow.py` | Runs Intake, Policy and Approver for one request in one Meko conversation |
 | `agents/intake_agent.py` | Intake agent (step 1): opens the trace, checks and extracts the request fields |
@@ -70,7 +70,11 @@ same Meko agent ID, `procurement_audit`, so Policy finds the memories Approver w
    both retrieved and each piece overlaps the one before; no vendor count is
    hard-coded. Complete: code marks R2 as applying. Incomplete: Policy records a
    failed step and raises `IncompleteReferenceData` before any model call, so the
-   request is not decided and `run_all.py` retries it.
+   request is not decided and `run_all.py` retries it. The same guard covers the
+   department budget (R3: fails if the budget table or the department's entry was
+   not retrieved; a blank department is left to R1) and the IT catalog (E4: a
+   named item not found fails the request unless the whole JSON catalog list was
+   retrieved; an item found, or no item named, settles E4 without it).
 7. `facts.code_checks` gives a verdict for every rule those facts settle. Only R6
    and E5 are always left to the model.
 8. The model (Claude Haiku 5.5 through the Anthropic API) checks all 12 rules.
@@ -92,6 +96,11 @@ same Meko agent ID, `procurement_audit`, so Policy finds the memories Approver w
 - Meko's indexer drops text in backticks, so the policy uses plain quoted words.
 - Meko also extracts its own memories from each conversation turn. Those have no
   `request_id` metadata and the code ignores them.
+- **Free-tier limit:** the Meko free tier allows 1,000 lifetime
+  `knowledgebase_search` requests. **That limit is now reached** (hit on November
+  21, 2026); every further search fails with `free_tier_limit_reached`. A full
+  `run_all.py` run uses about 170 searches (about 9 per request). Upgrade to
+  Standard or Pro before any further live run.
 - Memory from earlier runs is still in the datapack, including some wrong
   decisions. The code keeps the newest memory per request ID. A clean reset of
   memory before the final demo run would be worth doing; ask Michael first.
@@ -109,8 +118,15 @@ same Meko agent ID, `procurement_audit`, so Policy finds the memories Approver w
   from the final decision. Offline tests 21 of 21. **Live run with `--fresh`: 19
   of 19**, 98,111 input and 14,885 output tokens, no model verdicts overruled, every
   explanation matching its decision.
-- Note: an inspection conversation titled "Chunk inspection (not a decision)" was
-  opened in Meko on November 21 to look at how the vendor list is chunked.
+- Note: two inspection conversations titled "Chunk inspection (not a decision)"
+  were opened in Meko on November 21 to look at how the vendor list and IT catalog
+  are chunked.
+- Budget and IT catalog fail guard added after that run. Offline tests 28 of 28.
+  **Not yet run live:** the `--fresh` attempt decided only PR-001 (APPROVE, which
+  matches) before the Meko free-tier search limit stopped it. The records in
+  `runs/` are from the 19 of 19 run (commit 8437779). The failed attempts left
+  about 36 Meko conversations holding only an Intake step.
+- Next action: upgrade Meko, then `python run_all.py --fresh`.
 
 ## What is left to build
 
@@ -123,8 +139,7 @@ same Meko agent ID, `procurement_audit`, so Policy finds the memories Approver w
    Meko trace would be stronger.
 6. Baseline measurement with and without Meko (tokens and answer quality).
 7. README with full setup instructions, then the demo video.
-8. Open gap: if the department budget or IT catalog is not retrieved, R3 or E4 is
-   still left to the model rather than failing the request like the vendor list.
+8. Run the budget and IT catalog guard live (needs the Meko upgrade first).
 
 Rough plan: agents and traces by early December, viewer and report by
 mid-December, buffer over the holidays, video and README in early January.
